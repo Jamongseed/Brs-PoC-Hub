@@ -57,5 +57,9 @@ app.get("/frame2", (req, res) => {
 </html>`);
 });
 
+app.get("/", (req, res) => {
+  res.type("text/plain").send("PoC-A thirdparty server is running. Try /poc-a-thirdparty.js, /frame, /frame2");
+});
+
 const port = process.env.PORT || 4000;
 app.listen(port, () => console.log("poc-a thirdparty listening on", port));
