@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>PoC-B - Detail</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body data-poc-id="poc-b" data-poc-template="detail-v2">
+  <header class="top">
+    <div class="top__inner">
+      <div class="brand">
+        <div class="brand__title" id="detailTitle">BRS PoC Hub</div>
+        <div class="brand__sub" id="detailSub">loading...</div>
+      </div>
+
+      <div class="actions">
+        <button class="btn btn--ghost" id="btnBack">← Hub</button>
+        <button class="btn" id="btnCopyLinks">Copy links</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="panel">
+      <h2 id="pocTitle">PoC-B</h2>
+      <div class="hint" id="pocDesc"></div>
+
+      <div class="links" id="pocLinkButtons"></div>
+
+      <div class="note" id="pocNotes"></div>
+    </section>
+
+    <section class="panel">
+      <h2>PoC-B 시나리오 요약</h2>
+      <div class="hint">
+        페이지 로드 직후, 화면 전체를 덮는 투명 레이어를 최상단에 올려서
+        사용자의 클릭을 가로채고 동일 origin의 <code>/ad</code>로 강제 이동시키는 데모입니다.
+      </div>
+
+      <ol class="guide__steps">
+        <li><b>투명 오버레이 삽입</b>: <code>DOMContentLoaded</code> 직후 <code>div#invisibleClickLayer</code>를 DOM 최상단에 추가</li>
+        <li><b>캡처 단계 클릭 가로채기</b>: <code>click</code> 이벤트를 <code>{ capture: true }</code>로 먼저 수신</li>
+        <li><b>원래 클릭 흐름 차단</b>: <code>preventDefault()</code> + <code>stopPropagation()</code></li>
+        <li><b>강제 이동</b>: 짧은 딜레이 후 <code>window.location.href="/ad"</code></li>
+      </ol>
+
+      <div class="note">
+        <div><b>이 PoC의 이동은 안전을 위해 same-origin으로 제한됩니다</b></div>
+        <ul>
+          <li>실제 공격은 외부 도메인 이동/새 탭/연쇄 리다이렉트로 확장될 수 있으나, 데모에서는 <code>/ad</code>로만 이동합니다.</li>
+        </ul>
+      </div>
+
+      <div class="note">
+        <div><b>주의</b></div>
+        <ul>
+          <li>이 PoC는 클릭을 유도/가로채는 UI 조작 패턴을 재현합니다. 테스트는 안전한 환경에서 진행하세요.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>테스트 진행(체크리스트)</h2>
+      <div class="hint">
+        아래 단계는 순서대로 진행하는 테스트 가이드입니다.
+      </div>
+      <div id="reproChecklist"></div>
+      <div class="hint" id="reproProgress"></div>
+    </section>
+
+    <section class="panel">
+      <h2>기대 이벤트 타입</h2>
+      <div class="hint">
+        콘솔/대시보드에서 <code>type</code> 필드로 검색할 때 사용할 목록입니다.
+      </div>
+      <div class="links">
+        <button class="btn btn--ghost" id="btnCopyEventTypes">Copy event types</button>
+      </div>
+      <pre class="poc-pre" id="eventTypesBox"></pre>
+    </section>
+
+    <section class="panel">
+      <h2>기대 Rule ID</h2>
+      <div class="hint">
+        룰셋에서 어떤 규칙이 매칭되는지 확인할 때 사용할 목록입니다.
+      </div>
+      <div class="links">
+        <button class="btn btn--ghost" id="btnCopyRuleIds">Copy rule ids</button>
+      </div>
+      <pre class="poc-pre" id="ruleIdsBox"></pre>
+    </section>
+
+    <section class="panel">
+      <h2>확인해야 할 Evidence/필드</h2>
+      <div class="hint">
+        왜 탐지됐는지 근거 필드를 확인할 수 있도록 정리한 항목입니다.
+      </div>
+      <div id="evidenceBox"></div>
+    </section>
+
+    <footer class="footer">
+      <span>Detail page: PoC-B template + runtime-config로 링크 주입</span>
+    </footer>
+  </main>
+
+  <script src="/runtime-config.js"></script>
+  <script src="/poc.js"></script>
+
+  <style>
+    .poc-pre {
+      margin: 10px 0 0;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(22,28,34,.6);
+      color: var(--text);
+      font-size: 12px;
+      overflow: auto;
+      white-space: pre-wrap;
+      line-height: 1.45;
+    }
+    .kv {
+      margin-top: 10px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(22,28,34,.6);
+    }
+    .kv .k { color: var(--muted); font-size: 12px; }
+    .kv .v { color: var(--text); font-size: 12px; margin-top: 6px; }
+    .checklist {
+      margin-top: 10px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(22,28,34,.6);
+    }
+    .check-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(38,48,58,.6);
+    }
+    .check-row:last-child { border-bottom: none; }
+    .check-row input { margin-top: 2px; }
+    .check-row .txt { font-size: 12px; color: var(--text); line-height: 1.45; }
+    .check-row .sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .inline-actions {
+      margin-top: 8px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+  </style>
+</body>
+</html>

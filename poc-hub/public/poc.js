@@ -128,6 +128,160 @@
           why: "정적 분석/탐지 회피를 위해 동적 코드 실행을 사용하는 흔한 패턴입니다. 다른 시그널과 함께 나오면 강한 근거가 됩니다."
         }
       ]
+    },
+    "poc-b": {
+    expectedEventTypes: [
+        "INVISIBLE_LAYER_DETECTED"
+    ],
+    expectedRuleIds: [
+        "INVISIBLE_LAYER_INSERT",
+        "INVISIBLE_LAYER_CLICK"
+    ],
+    reproChecklist: [
+        {
+        title: "1) 메인 페이지 열기",
+        detail: "아래 버튼으로 MAIN(투명 오버레이 삽입 페이지)을 엽니다.",
+        action: "open_main"
+        },
+        {
+        title: "2) BRS 확장(센서) 활성화 확인",
+        detail: "브라우저에서 BRS 확장이 켜져 있고, 해당 사이트에서 동작 중인지 확인합니다. (콘솔 로그/팝업/대시보드 등)",
+        action: "manual"
+        },
+        {
+        title: "3) 로드 직후 삽입 탐지 확인",
+        detail: "페이지가 로드되면 투명 레이어가 DOM에 삽입됩니다. 콘솔/대시보드에서 reason=INSERT 이벤트가 발생했는지 확인합니다.",
+        action: "manual"
+        },
+        {
+        title: "4) 화면 아무 곳이나 클릭",
+        detail: "투명 레이어가 클릭을 가로채고 /ad로 이동합니다. reason=POINTERDOWN 이벤트가 발생했는지 확인합니다.",
+        action: "manual"
+        },
+        {
+        title: "5) 탐지 근거(Evidence/필드) 확인",
+        detail: "overlay의 크기/투명도/z-index/점유율 및 클릭 좌표 등 근거 필드가 기대값으로 채워졌는지 확인합니다.",
+        action: "manual"
+        }
+    ],
+    evidenceFields: [
+        {
+        title: "INVISIBLE_LAYER_DETECTED (INSERT)",
+        keys: [
+            "type = INVISIBLE_LAYER_DETECTED",
+            "data.reason = INSERT",
+            "data.tag, data.id, data.cls",
+            "data.position, data.zIndex, data.opacity",
+            "data.areaRatio, data.rect (x,y,w,h)",
+            "data.flags.transparent, data.flags.highZ"
+        ],
+        why: "화면을 넓게 덮고(면적) 클릭을 받을 수 있으며(pointer-events), 투명하거나(opacity), 최상단(z-index)인 오버레이가 삽입된 정황입니다."
+        },
+        {
+        title: "INVISIBLE_LAYER_DETECTED (POINTERDOWN)",
+        keys: [
+            "type = INVISIBLE_LAYER_DETECTED",
+            "data.reason = POINTERDOWN",
+            "data.x, data.y (클릭 좌표)",
+            "overlay 정보(INSERT와 동일 필드들)"
+        ],
+        why: "사용자의 실제 입력(pointerdown)이 투명 오버레이를 타겟으로 잡은 상황이라, 단순 삽입보다 훨씬 강한 근거가 됩니다."
+        }
+    ]
+    },
+    "poc-c": {
+    expectedEventTypes: [
+        "DYN_SCRIPT_INSERT",
+        "DYN_IFRAME_INSERT",
+        "THIRDPARTY_POSTMESSAGE_ARM",
+        "FORM_NATIVE_SUBMIT",
+        "FORM_SUBMIT"
+    ],
+    expectedRuleIds: [
+        "DYN_SCRIPT_INSERT_CROSS_SITE",
+        "IFRAME_INSERT_INITIATED_BY_CROSS_SITE_SCRIPT",
+        "THIRDPARTY_WIDGET_ARMED",
+        "PHISHING_FORM_MISMATCH"
+    ],
+    reproChecklist: [
+        {
+        title: "1) 메인 페이지 열기",
+        detail: "아래 버튼으로 MAIN(정상 로그인 UI 역할)을 엽니다.",
+        action: "open_main"
+        },
+        {
+        title: "2) BRS 확장(센서) 활성화 확인",
+        detail: "브라우저에서 BRS 확장이 켜져 있고, 해당 사이트에서 동작 중인지 확인합니다. (콘솔 로그/팝업/대시보드 등)",
+        action: "manual"
+        },
+        {
+        title: "3) 위젯(iframe) 노출 확인",
+        detail: "페이지 우하단(또는 지정 위치)에 광고 위젯처럼 보이는 iframe이 로드됐는지 확인합니다. (SDK가 iframe을 삽입합니다.)",
+        action: "manual"
+        },
+        {
+        title: "4) 위젯에서 상호작용(ARM) 트리거",
+        detail: "위젯 내부 버튼(예: 광고 보기)을 클릭해 postMessage 트리거를 발생시킵니다. THIRDPARTY_POSTMESSAGE_ARM 이벤트가 발생했는지 확인합니다.",
+        action: "manual"
+        },
+        {
+        title: "5) 로그인 폼 제출로 유출 플로우 재현",
+        detail: "MAIN 로그인 폼에 아무 값이나 입력 후 Login을 클릭합니다. armed 상태면 SDK가 action을 (thirdparty)/collect로 바꾸고 form.submit()을 호출합니다.",
+        action: "manual"
+        },
+        {
+        title: "6) 탐지 결과 확인",
+        detail: "FORM_SUBMIT에서 mismatch=true(via=native_submit)로 잡히는지, 그리고 script/iframe/armed 시그널이 같은 세션에서 연결되는지 확인합니다.",
+        action: "manual"
+        },
+        {
+        title: "7) (선택) THIRDPARTY 구성요소 확인",
+        detail: "THIRDPARTY(위젯/수집 엔드포인트)가 분리된 origin임을 확인하면 체인 이해에 도움이 됩니다.",
+        action: "open_third"
+        }
+    ],
+    evidenceFields: [
+        {
+        title: "DYN_SCRIPT_INSERT (cross-site SDK 로드)",
+        keys: [
+            "type = DYN_SCRIPT_INSERT",
+            "data.src / data.abs",
+            "data.crossSite = true",
+            "data.targetOrigin"
+        ],
+        why: "MAIN이 외부(THIRDPARTY) SDK를 로드한 정황입니다. 체인의 시작점 역할을 합니다."
+        },
+        {
+        title: "DYN_IFRAME_INSERT (SDK가 위젯 삽입)",
+        keys: [
+            "type = DYN_IFRAME_INSERT",
+            "data.src / data.abs",
+            "data.hidden (일반적으로 false)",
+            "data.initiatorCrossSite = true (근거가 있으면)"
+        ],
+        why: "외부에서 들어온 스크립트가 iframe을 동적으로 삽입하는 패턴은 위젯/광고 형태로 악용되기 쉬워 위험도가 상승합니다."
+        },
+        {
+        title: "THIRDPARTY_POSTMESSAGE_ARM (위젯 → 부모창 트리거)",
+        keys: [
+            "type = THIRDPARTY_POSTMESSAGE_ARM",
+            "data.origin",
+            "data.type, data.action",
+            "data.payload"
+        ],
+        why: "iframe 위젯 상호작용이 부모창 상태(armed)를 바꾸는 중간 트리거입니다. 이후 폼 제출 조작의 선행 신호로 의미가 있습니다."
+        },
+        {
+        title: "FORM_NATIVE_SUBMIT → FORM_SUBMIT (native_submit 경로)",
+        keys: [
+            "type = FORM_SUBMIT",
+            "data.via = native_submit",
+            "data.actionResolved, data.actionOrigin, data.pageOrigin",
+            "data.mismatch = true"
+        ],
+        why: "submit 이벤트를 막고 form.submit()로 전송하는 우회 흐름에서도, 실제 제출 목적지가 cross-origin으로 바뀐 상태(mismatch)를 근거로 잡아내는 것이 핵심입니다."
+        }
+    ]
     }
   };
 
