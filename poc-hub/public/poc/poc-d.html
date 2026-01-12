@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>PoC-D - Detail</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body data-poc-id="poc-d" data-poc-template="detail-v2">
+  <header class="top">
+    <div class="top__inner">
+      <div class="brand">
+        <div class="brand__title" id="detailTitle">BRS PoC Hub</div>
+        <div class="brand__sub" id="detailSub">loading...</div>
+      </div>
+
+      <div class="actions">
+        <button class="btn btn--ghost" id="btnBack">← Hub</button>
+        <button class="btn" id="btnCopyLinks">Copy links</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="panel">
+      <h2 id="pocTitle">PoC-D</h2>
+      <div class="hint" id="pocDesc"></div>
+
+      <div class="links" id="pocLinkButtons"></div>
+
+      <div class="note" id="pocNotes"></div>
+    </section>
+
+    <section class="panel">
+      <h2>PoC-D 시나리오 요약</h2>
+      <div class="hint">
+        사용자가 링크를 클릭하는 그 순간(pointerdown/mousedown 캡처 단계)에만
+        <code>a[href]</code>를 다른 목적지로 바꿔치기하고, 클릭 직후에는 원래 값으로 되돌리는(JIT + revert)
+        링크 하이재킹 패턴을 데모합니다. 클릭 이후 DOM을 검사하면 <code>href</code>가 이미 정상으로 복구되어 있어
+        사후 검사/정적 검사로는 흔적이 남기 어려운 타입입니다.
+      </div>
+
+      <ol class="guide__steps">
+        <li><b>Pre-click 스왑</b>: <code>pointerdown/mousedown(capture)</code> 시점에 <code>/real → /ad</code></li>
+        <li><b>클릭 이벤트에서 원복</b>: <code>href</code>를 다시 <code>/real</code>로 복구 (revert)</li>
+        <li><b>실제 이동은 /ad</b>: 원복 후에도 최종 네비게이션은 <code>/ad</code>로 유도</li>
+      </ol>
+
+      <div class="note">
+        <div><b>주의</b></div>
+        <ul>
+          <li>이 PoC는 데모 목적입니다. 실제 피싱/악성 다운로드와 유사한 UX 패턴을 안전한 same-origin 경로로 재현합니다.</li>
+          <li>페이지에서 보이는 링크 텍스트/표시와 실제 이동 목적지가 달라질 수 있습니다.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>테스트 진행(체크리스트)</h2>
+      <div class="hint">
+        아래 단계는 순서대로 진행하는 테스트 가이드입니다.
+      </div>
+      <div id="reproChecklist"></div>
+      <div class="hint" id="reproProgress"></div>
+    </section>
+
+    <section class="panel">
+      <h2>기대 이벤트 타입</h2>
+      <div class="hint">
+        콘솔/대시보드에서 <code>type</code> 필드로 검색할 때 사용할 목록입니다.
+      </div>
+      <div class="links">
+        <button class="btn btn--ghost" id="btnCopyEventTypes">Copy event types</button>
+      </div>
+      <pre class="poc-pre" id="eventTypesBox"></pre>
+    </section>
+
+    <section class="panel">
+      <h2>기대 Rule ID</h2>
+      <div class="hint">
+        룰셋에서 어떤 규칙이 매칭되는지 확인할 때 사용할 목록입니다.
+      </div>
+      <div class="links">
+        <button class="btn btn--ghost" id="btnCopyRuleIds">Copy rule ids</button>
+      </div>
+      <pre class="poc-pre" id="ruleIdsBox"></pre>
+    </section>
+
+    <section class="panel">
+      <h2>확인해야 할 Evidence/필드</h2>
+      <div class="hint">
+        왜 탐지됐는지 근거 필드를 확인할 수 있도록 정리한 항목입니다.
+      </div>
+      <div id="evidenceBox"></div>
+    </section>
+
+    <footer class="footer">
+      <span>Detail page: PoC-D template + runtime-config로 링크 주입</span>
+    </footer>
+  </main>
+
+  <script src="/runtime-config.js"></script>
+  <script src="/poc.js"></script>
+
+  <style>
+    .poc-pre {
+      margin: 10px 0 0;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(22,28,34,.6);
+      color: var(--text);
+      font-size: 12px;
+      overflow: auto;
+      white-space: pre-wrap;
+      line-height: 1.45;
+    }
+    .kv {
+      margin-top: 10px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(22,28,34,.6);
+    }
+    .kv .k { color: var(--muted); font-size: 12px; }
+    .kv .v { color: var(--text); font-size: 12px; margin-top: 6px; }
+    .checklist {
+      margin-top: 10px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(22,28,34,.6);
+    }
+    .check-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(38,48,58,.6);
+    }
+    .check-row:last-child { border-bottom: none; }
+    .check-row input { margin-top: 2px; }
+    .check-row .txt { font-size: 12px; color: var(--text); line-height: 1.45; }
+    .check-row .sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .inline-actions {
+      margin-top: 8px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+  </style>
+</body>
+</html>

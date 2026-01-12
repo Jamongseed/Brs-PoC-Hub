@@ -282,6 +282,80 @@
         why: "submit 이벤트를 막고 form.submit()로 전송하는 우회 흐름에서도, 실제 제출 목적지가 cross-origin으로 바뀐 상태(mismatch)를 근거로 잡아내는 것이 핵심입니다."
         }
     ]
+    },
+    "poc-d": {
+    expectedEventTypes: [
+        "LINK_HREF_SWAP_DETECTED",
+        "MUTATION_OBSERVER_REGISTER",
+        "MUTATION_OBSERVER_TRIGGER"
+    ],
+    expectedRuleIds: [
+        "LINK_HREF_SWAP_PRECLICK_REVERTED",
+        "LINK_HREF_SWAP_CROSS_ORIGIN",
+        "LINK_HREF_SWAP_SAME_ORIGIN",
+        "LINK_HREF_SWAP_BASE",
+        "MUTATION_OBSERVER_REGISTER_BASE"
+    ],
+    reproChecklist: [
+        {
+        title: "1) 메인 페이지 열기",
+        detail: "아래 버튼으로 MAIN(링크 bait 페이지)을 엽니다.",
+        action: "open_main"
+        },
+        {
+        title: "2) BRS 확장(센서) 활성화 확인",
+        detail: "브라우저에서 BRS 확장이 켜져 있고, 해당 사이트에서 동작 중인지 확인합니다. (콘솔 로그/팝업/대시보드 등)",
+        action: "manual"
+        },
+        {
+        title: "3) 링크 클릭으로 트리거",
+        detail: "페이지에서 보이는 링크(예: www.example.com 표시)를 클릭합니다. 클릭 직전 순간에만 href가 바뀌고, 클릭 직후에는 다시 원복되는 흐름이 재현됩니다.",
+        action: "manual"
+        },
+        {
+        title: "4) 탐지 결과 확인",
+        detail: "LINK_HREF_SWAP_DETECTED 이벤트가 발생했는지 확인합니다. within50ms/within200ms, reverted/revertMs, crossOriginChanged 필드가 근거가 됩니다.",
+        action: "manual"
+        },
+        {
+        title: "5) (선택) /real 과 /ad 확인",
+        detail: "PoC는 같은 origin에서 /real(정상)과 /ad(강제 이동)를 제공합니다. 링크 표시와 실제 이동 목적지 불일치를 확인할 수 있습니다.",
+        action: "manual"
+        }
+    ],
+    evidenceFields: [
+        {
+        title: "LINK_HREF_SWAP_DETECTED (pre-click href swap)",
+        keys: [
+            "type = LINK_HREF_SWAP_DETECTED",
+            "data.triggerInput (pointerdown/mousedown)",
+            "data.deltaMsFromDown, data.within50ms, data.within200ms",
+            "data.oldHrefAbs → data.newHrefAbs (변경 전/후)",
+            "data.crossOriginChanged (오리진 전환 여부)",
+            "data.reverted, data.revertMs (원복 패턴 여부)"
+        ],
+        why: "다운 이벤트 직후(매우 짧은 시간)에 href가 바뀌고, 클릭 이후 원래 값으로 돌아오는(revert) 패턴은 사용자가 보는 링크와 실제 이동을 분리하려는 전형적인 회피 형태입니다."
+        },
+        {
+        title: "rule 승격 조건(룰셋 매칭 포인트)",
+        keys: [
+            "within50ms=true & reverted=true → LINK_HREF_SWAP_PRECLICK_REVERTED (HIGH)",
+            "within200ms=true & crossOriginChanged=true → LINK_HREF_SWAP_CROSS_ORIGIN (HIGH)",
+            "within50ms=true & crossOriginChanged=false → LINK_HREF_SWAP_SAME_ORIGIN (MEDIUM)",
+            "기본 기록: LINK_HREF_SWAP_BASE (LOW)"
+        ],
+        why: "PoC-D는 동일 이벤트(LINK_HREF_SWAP_DETECTED)를 기록한 뒤, 타이밍/원복/교차 오리진 조건에 따라 HIGH/MEDIUM으로 승격되는 구조입니다."
+        },
+        {
+        title: "간접 신호: MutationObserver",
+        keys: [
+            "MUTATION_OBSERVER_REGISTER (href attribute 감시 등록)",
+            "MUTATION_OBSERVER_TRIGGER (href 변경 감지 트리거)",
+            "이 신호는 ‘부가 타임라인 근거’이며, 핵심 판정은 LINK_HREF_SWAP_DETECTED로 수행"
+        ],
+        why: "PoC 내부가 MutationObserver로 href 변화를 감시하기 때문에, 등록/트리거 이벤트가 함께 기록될 수 있습니다. (핵심 판정은 href swap 전용 detector가 담당)"
+        }
+    ]
     }
   };
 
