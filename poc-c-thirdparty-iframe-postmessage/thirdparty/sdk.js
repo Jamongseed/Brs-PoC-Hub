@@ -93,9 +93,15 @@
     }, { capture: true });
   }
 
-  document.addEventListener("DOMContentLoaded", () => {
+  function boot() {
     injectAdWidget();
     setupMessageListener();
     hookFormSubmit();
-  });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot, { once: true });
+  } else {
+    boot();
+  }
 })();
