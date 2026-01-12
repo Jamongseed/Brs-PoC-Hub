@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>PoC-A - Detail</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body data-poc-id="poc-a" data-poc-template="detail-v2">
+  <header class="top">
+    <div class="top__inner">
+      <div class="brand">
+        <div class="brand__title" id="detailTitle">BRS PoC Hub</div>
+        <div class="brand__sub" id="detailSub">loading...</div>
+      </div>
+
+      <div class="actions">
+        <button class="btn btn--ghost" id="btnBack">← Hub</button>
+        <button class="btn" id="btnCopyLinks">Copy links</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="panel">
+      <h2 id="pocTitle">PoC-A</h2>
+      <div class="hint" id="pocDesc"></div>
+
+      <div class="links" id="pocLinkButtons"></div>
+
+      <div class="note" id="pocNotes"></div>
+    </section>
+
+    <section class="panel">
+      <h2>PoC-A 시나리오 요약</h2>
+      <div class="hint">
+        로그인 버튼을 누르는 순간, 화면에는 정상 동작처럼 보이는 UX를 유지하면서
+        외부 스크립트/숨김 iframe/동적 실행을 연쇄로 수행하는 공격 체인을 데모합니다.
+      </div>
+
+      <ol class="guide__steps">
+        <li><b>외부 스크립트 동적 삽입</b>: <code>step2_insertExternalScript()</code> → <code>&lt;script src="(thirdparty)/poc-a-thirdparty.js"&gt;</code></li>
+        <li><b>숨김 iframe 동적 삽입</b>: <code>step3_insertHiddenIframe()</code> → <code>&lt;iframe src="(thirdparty)/frame"&gt;</code> (1px + 화면 밖)</li>
+        <li><b>atob → Function 실행</b>: <code>step4_atobFunctionDecode()</code> → <code>atob(base64)</code> → <code>new Function(code)()</code></li>
+        <li><b>폼 제출</b>: 최종적으로 <code>form.submit()</code></li>
+      </ol>
+
+      <div class="note">
+        <div><b>Thirdparty 구성요소(공급망 체인)에서 추가로 하는 일</b></div>
+        <ul>
+          <li><code>https://example.com/analytics2.js</code> 같은 2차 로더 삽입</li>
+          <li><code>(thirdparty)/frame2</code> 숨김 iframe 추가 삽입</li>
+        </ul>
+      </div>
+
+      <div class="note">
+        <div><b>주의</b></div>
+        <ul>
+          <li>이 PoC는 데모 목적입니다. 로그인 입력칸에는 <b>실제 계정/비밀번호</b>를 입력하지 마세요.</li>
+          <li>테스트는 로컬/샌드박스 계정 등 안전한 환경에서 진행하세요.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>테스트 진행(체크리스트)</h2>
+      <div class="hint">
+        아래 단계는 순서대로 진행하는 테스트 가이드입니다.
+      </div>
+      <div id="reproChecklist"></div>
+      <div class="hint" id="reproProgress"></div>
+    </section>
+
+    <section class="panel">
+      <h2>기대 이벤트 타입</h2>
+      <div class="hint">
+        콘솔/대시보드에서 <code>type</code> 필드로 검색할 때 사용할 목록입니다.
+      </div>
+      <div class="links">
+        <button class="btn btn--ghost" id="btnCopyEventTypes">Copy event types</button>
+      </div>
+      <pre class="poc-pre" id="eventTypesBox"></pre>
+    </section>
+
+    <section class="panel">
+      <h2>기대 Rule ID</h2>
+      <div class="hint">
+        룰셋에서 어떤 규칙이 매칭되는지 확인할 때 사용할 목록입니다.
+      </div>
+      <div class="links">
+        <button class="btn btn--ghost" id="btnCopyRuleIds">Copy rule ids</button>
+      </div>
+      <pre class="poc-pre" id="ruleIdsBox"></pre>
+    </section>
+
+    <section class="panel">
+      <h2>확인해야 할 Evidence/필드</h2>
+      <div class="hint">
+        왜 탐지됐는지 근거 필드를 확인할 수 있도록 정리한 항목입니다.
+      </div>
+      <div id="evidenceBox"></div>
+    </section>
+
+    <footer class="footer">
+      <span>Detail page: PoC-A template + runtime-config로 링크 주입</span>
+    </footer>
+  </main>
+
+  <script src="/runtime-config.js"></script>
+  <script src="/poc.js"></script>
+
+  <style>
+    .poc-pre {
+      margin: 10px 0 0;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(22,28,34,.6);
+      color: var(--text);
+      font-size: 12px;
+      overflow: auto;
+      white-space: pre-wrap;
+      line-height: 1.45;
+    }
+    .kv {
+      margin-top: 10px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(22,28,34,.6);
+    }
+    .kv .k { color: var(--muted); font-size: 12px; }
+    .kv .v { color: var(--text); font-size: 12px; margin-top: 6px; }
+    .checklist {
+      margin-top: 10px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(22,28,34,.6);
+    }
+    .check-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(38,48,58,.6);
+    }
+    .check-row:last-child { border-bottom: none; }
+    .check-row input { margin-top: 2px; }
+    .check-row .txt { font-size: 12px; color: var(--text); line-height: 1.45; }
+    .check-row .sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .inline-actions {
+      margin-top: 8px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+  </style>
+</body>
+</html>

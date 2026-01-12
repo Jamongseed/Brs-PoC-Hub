@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>BRS PoC Hub</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header class="top">
+    <div class="top__inner">
+      <div class="brand">
+        <div class="brand__title" id="hubTitle">BRS PoC Hub</div>
+        <div class="brand__sub" id="hubMeta"></div>
+      </div>
+
+      <div class="actions">
+        <button class="btn" id="btnCopyAll">전체 링크 복사</button>
+        <button class="btn btn--ghost" id="btnCollapse">가이드 접기</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="panel" id="resetPanel">
+      <h2>Reset / 테스트 가이드</h2>
+      <div id="resetGuides"></div>
+    </section>
+
+    <section class="panel">
+      <h2>PoC 목록</h2>
+      <div class="hint">
+        각 PoC는 origin 격리(서브도메인/서비스 분리) 상태로 링크만 연결하는 방식이 안정적입니다.
+      </div>
+      <div id="cards" class="cards"></div>
+    </section>
+
+    <footer class="footer">
+      <span>Hub only. 각 PoC는 별도 서비스로 붙이기.</span>
+    </footer>
+  </main>
+
+  <script src="/runtime-config.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>

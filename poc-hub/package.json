@@ -1,0 +1,14 @@
+{
+  "name": "brs-poc-hub",
+  "version": "1.0.0",
+  "private": true,
+  "type": "commonjs",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "PORT=3000 node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
