@@ -1,10 +1,18 @@
 import { WebSocketServer } from "ws";
+import http from "http";
 
 const port = process.env.PORT || 5000;
 
-const wss = new WebSocketServer({ port, host: "0.0.0.0" });
+const server = http.createServer((req, res) => {
+  res.writeHead(200, { "Content-Type": "text/plain; charset=utf-8" });
+  res.end("ok");
+});
 
-console.log("COLLECTOR(WS) listening on port " + port);
+const wss = new WebSocketServer({ server });
+
+server.listen(port, () => {
+  console.log("COLLECTOR(WS) listening on port " + port);
+});
 
 const events = [];
 const MAX_EVENTS = 2000;

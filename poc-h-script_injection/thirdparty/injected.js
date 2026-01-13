@@ -5,7 +5,14 @@
   function getCollectorWs() {
     try {
       const cfg = window.__POC_H__ || {};
-      if (cfg.collectorWs) return String(cfg.collectorWs);
+      if (cfg.collectorWs) {
+        let u = String(cfg.collectorWs).replace(/\/$/, "");
+        // https 페이지에서는 ws://가 Mixed Content로 막힘 → wss://로 보정
+        if (location.protocol === "https:" && u.startsWith("ws://")) {
+          u = "wss://" + u.slice("ws://".length);
+        }
+        return u;
+      }
     } catch {}
     return "ws://localhost:5000";
   }

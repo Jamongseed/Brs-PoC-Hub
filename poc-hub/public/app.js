@@ -21,7 +21,15 @@
     return typeof u === "string" && u.trim().length > 0;
   }
 
+  function toOpenableUrl(url) {
+    const u = String(url || "").trim();
+    if (u.startsWith("wss://")) return "https://" + u.slice("wss://".length);
+    if (u.startsWith("ws://")) return "http://" + u.slice("ws://".length);
+    return u;
+  }
+
   function openUrl(url) {
+    url = toOpenableUrl(url);
     try { window.open(url, "_blank", "noopener,noreferrer"); } catch { location.href = url; }
   }
 

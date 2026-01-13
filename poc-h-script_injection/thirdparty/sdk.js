@@ -59,5 +59,10 @@
     document.documentElement.appendChild(container);//DOM트리에서 루트의 자식으로 완성된 컨테이너를 놓기, 여기서 document는 현재 사용자가 보고있는 페이지의 기준이라서 3000번 페이지의 html을 말하는거다.
   }
 
-  document.addEventListener("DOMContentLoaded", injectAdWidget);//html이 완성되면 injectAdWidget 함수실행하쇼
+  // Render에서 sdk.js가 동적으로 붙으면 DOMContentLoaded를 놓칠 수 있음 → 즉시 실행 fallback
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", injectAdWidget);
+  } else {
+    injectAdWidget();
+  }
 })();
