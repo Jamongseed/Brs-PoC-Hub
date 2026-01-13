@@ -559,6 +559,114 @@
         why: "PoC-F의 핵심은 '정상 제출 유지'와 동시에 외부(/collect)로 유출 네트워크가 추가 발생하는 점입니다. proto tamper + submit + network call이 한 세션에 묶이면 가장 설득력이 강합니다."
       }
     ]
+    },
+    "poc-g": {
+      expectedEventTypes: [
+        "DYN_SCRIPT_INSERT",
+        "SW_REGISTER",
+        "SW_REGISTRATIONS_PRESENT",
+        "SW_PERSISTENCE_ACTIVE",
+        "POC_G_SW_CHAIN (optional)"
+      ],
+      expectedRuleIds: [
+        "DYN_SCRIPT_INSERT_CROSS_SITE",
+        "SW_REGISTER_INITIATED_BY_CROSS_SITE_SCRIPT",
+        "SW_REGISTER (fallback)",
+        "SW_REGISTRATIONS_PRESENT",
+        "SW_PERSISTENCE_ACTIVE",
+        "POC_G_SW_CHAIN_CONFIRMED (optional)"
+      ],
+      reproChecklist: [
+        {
+          title: "1) 메인(VICTIM) 페이지 열기",
+          detail: "아래 버튼으로 MAIN(VICTIM)을 열고 페이지가 정상 로드되는지 확인합니다.",
+          action: "open_main"
+        },
+        {
+          title: "2) BRS 확장(센서) 활성화 확인",
+          detail: "BRS 확장이 켜져 있고, 해당 사이트에서 동작 중인지 확인합니다. (콘솔 로그/팝업/대시보드 등)",
+          action: "manual"
+        },
+        {
+          title: "3) 서드파티 SDK(ATTACKER) 로드 확인",
+          detail: "MAIN이 THIRDPARTY(ATTACKER) SDK를 로드하는 구조인지 확인합니다. DYN_SCRIPT_INSERT(crossSite=true)가 시작 신호입니다.",
+          action: "open_third"
+        },
+        {
+          title: "4) SW register 시도 탐지 확인",
+          detail: "SDK가 victim origin 컨텍스트에서 navigator.serviceWorker.register('/sw-evil.js', {scope:'/'})를 호출합니다. SW_REGISTER가 찍히는지 확인합니다.",
+          action: "manual"
+        },
+        {
+          title: "5) SW 등록/활성 상태 확인",
+          detail: "등록이 존재하면 SW_REGISTRATIONS_PRESENT, 컨트롤러를 잡으면 SW_PERSISTENCE_ACTIVE가 찍힙니다. controller.scriptURL이 /sw-evil.js로 보이는지 확인합니다.",
+          action: "manual"
+        },
+        {
+          title: "6) (PoC 동작) /api/account 호출로 변조 확인",
+          detail: "PoC UI에서 /api/account 호출 시 응답이 SW에 의해 변조되는지 확인합니다. (예: VIP, balance 999999, swModified=true, 헤더 X-POC-SW 등)",
+          action: "manual"
+        },
+        {
+          title: "7) (선택) 체인 확정 이벤트 확인",
+          detail: "구현/상태에 따라 POC_G_SW_CHAIN이 발행될 수 있습니다. 발행되면 ruleId=POC_G_SW_CHAIN_CONFIRMED(HIGH)로 확정됩니다. (안 뜨면 optional로 간주)",
+          action: "manual"
+        }
+      ],
+      evidenceFields: [
+        {
+          title: "DYN_SCRIPT_INSERT (cross-site SDK 로드)",
+          keys: [
+            "type = DYN_SCRIPT_INSERT",
+            "data.src / data.abs (sdk_sw_register.js)",
+            "data.crossSite = true",
+            "data.targetOrigin"
+          ],
+          why: "공급망 체인의 시작점입니다. victim이 외부(서드파티) 스크립트를 로드한 정황을 남깁니다."
+        },
+        {
+          title: "SW_REGISTER + initiatorCrossSite (핵심)",
+          keys: [
+            "type = SW_REGISTER",
+            "data.scriptURL / data.abs = /sw-evil.js",
+            "data.scope (예: /)",
+            "data.crossSite = false (SW 스크립트가 same-origin이면 정상)",
+            "data.initiatorCrossSite = true (register 호출 주체가 cross-site SDK면 true)",
+            "data.initiatorUrl / evidence.stack (스택에서 sdk_sw_register.js가 보이는지)"
+          ],
+          why: "SW 스크립트 자체는 same-origin이라도, 등록을 실행한 주체가 cross-site 스크립트로 확인되면 정상 설계에서 매우 이례적이라 강한 신호입니다."
+        },
+        {
+          title: "SW_REGISTRATIONS_PRESENT (등록 존재)",
+          keys: [
+            "type = SW_REGISTRATIONS_PRESENT",
+            "data.regsCount",
+            "data.regs[*].scope",
+            "data.regs[*].activeScriptURL / installing / waiting 요약"
+          ],
+          why: "SW가 실제로 등록되어 브라우저에 남아있다는 정보성 신호입니다. 단독보다는 다른 이벤트와 결합될 때 의미가 커집니다."
+        },
+        {
+          title: "SW_PERSISTENCE_ACTIVE (controller 확보)",
+          keys: [
+            "type = SW_PERSISTENCE_ACTIVE",
+            "data.hasController = true",
+            "data.controller.scriptURL",
+            "data.controllerAbs, data.controllerOrigin",
+            "data.regsCount / data.regs 요약"
+          ],
+          why: "controller를 확보한 순간부터 fetch 가로채기/응답 변조가 현실화됩니다. PoC-G에서 지속성(persistence)의 핵심 증거입니다."
+        },
+        {
+          title: "POC_G_SW_CHAIN (optional: 체인 확정)",
+          keys: [
+            "type = POC_G_SW_CHAIN",
+            "ruleId = POC_G_SW_CHAIN_CONFIRMED",
+            "DYN_SCRIPT_INSERT(crossSite) + SW_REGISTER(initiatorCrossSite) + SW_PERSISTENCE_ACTIVE를 시간 윈도우로 결합"
+          ],
+          why: "구현이 시간상관을 성공적으로 묶으면 HIGH 확정 이벤트로 승격됩니다. 현재 코드 상태에 따라 optional일 수 있습니다."
+        }
+      ]
     }
   };
 
