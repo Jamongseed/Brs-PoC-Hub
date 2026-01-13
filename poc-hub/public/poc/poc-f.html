@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>PoC-F - Detail</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body data-poc-id="poc-f" data-poc-template="detail-v2">
+  <header class="top">
+    <div class="top__inner">
+      <div class="brand">
+        <div class="brand__title" id="detailTitle">BRS PoC Hub</div>
+        <div class="brand__sub" id="detailSub">loading...</div>
+      </div>
+
+      <div class="actions">
+        <button class="btn btn--ghost" id="btnBack">← Hub</button>
+        <button class="btn" id="btnCopyLinks">Copy links</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="panel">
+      <h2 id="pocTitle">PoC-F</h2>
+      <div class="hint" id="pocDesc"></div>
+
+      <div class="links" id="pocLinkButtons"></div>
+
+      <div class="note" id="pocNotes"></div>
+    </section>
+
+    <section class="panel">
+      <h2>PoC-F 시나리오 요약</h2>
+      <div class="hint">
+        정상 로그인 폼(<code>/login</code>)과 서버는 정상인데,
+        브라우저 런타임에서 서드파티 SDK가 <code>HTMLFormElement.prototype.submit</code> /
+        <code>requestSubmit</code>을 오버라이드해서 제출 직전에 폼 데이터를 외부로 동시에 유출하는 시나리오를 데모합니다.
+        서버 로그만 보면 정상 로그인처럼 보이지만, 브라우저 내부에서만 추가 유출이 발생하는 타입입니다.
+      </div>
+
+      <ol class="guide__steps">
+        <li><b>서드파티 로드</b>: MAIN이 THIRDPARTY SDK(<code>sdk_submit_hook.js</code>)를 로드</li>
+        <li><b>프로토타입 변조</b>: SDK가 <code>submit/requestSubmit</code>을 커스텀 함수로 교체</li>
+        <li><b>제출 시 유출</b>: 훅이 먼저 실행되어 <code>sendBeacon</code>(또는 <code>fetch</code>)로 <code>/collect</code>로 전송</li>
+        <li><b>정상 제출도 유지</b>: 이후 원래 제출은 계속 진행되어 <code>/login</code>으로 정상 요청이 감</li>
+      </ol>
+
+      <div class="note">
+        <div><b>주의</b></div>
+        <ul>
+          <li>이 PoC는 데모 목적입니다. 실제 자격증명/개인정보를 입력하지 마세요.</li>
+          <li>서버는 정상 처리처럼 보이기 때문에, 브라우저 런타임 탐지(Proto tamper + native submit hook + network hook) 결합이 핵심입니다.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>테스트 진행(체크리스트)</h2>
+      <div class="hint">
+        아래 단계는 순서대로 진행하는 테스트 가이드입니다.
+      </div>
+      <div id="reproChecklist"></div>
+      <div class="hint" id="reproProgress"></div>
+    </section>
+
+    <section class="panel">
+      <h2>기대 이벤트 타입</h2>
+      <div class="hint">
+        콘솔/대시보드에서 <code>type</code> 필드로 검색할 때 사용할 목록입니다.
+      </div>
+      <div class="links">
+        <button class="btn btn--ghost" id="btnCopyEventTypes">Copy event types</button>
+      </div>
+      <pre class="poc-pre" id="eventTypesBox"></pre>
+    </section>
+
+    <section class="panel">
+      <h2>기대 Rule ID</h2>
+      <div class="hint">
+        룰셋에서 어떤 규칙이 매칭되는지 확인할 때 사용할 목록입니다.
+      </div>
+      <div class="links">
+        <button class="btn btn--ghost" id="btnCopyRuleIds">Copy rule ids</button>
+      </div>
+      <pre class="poc-pre" id="ruleIdsBox"></pre>
+    </section>
+
+    <section class="panel">
+      <h2>확인해야 할 Evidence/필드</h2>
+      <div class="hint">
+        왜 탐지됐는지 근거 필드를 확인할 수 있도록 정리한 항목입니다.
+      </div>
+      <div id="evidenceBox"></div>
+    </section>
+
+    <footer class="footer">
+      <span>Detail page: PoC-F template + runtime-config로 링크 주입</span>
+    </footer>
+  </main>
+
+  <script src="/runtime-config.js"></script>
+  <script src="/poc.js"></script>
+
+  <style>
+    .poc-pre {
+      margin: 10px 0 0;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(22,28,34,.6);
+      color: var(--text);
+      font-size: 12px;
+      overflow: auto;
+      white-space: pre-wrap;
+      line-height: 1.45;
+    }
+    .kv {
+      margin-top: 10px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(22,28,34,.6);
+    }
+    .kv .k { color: var(--muted); font-size: 12px; }
+    .kv .v { color: var(--text); font-size: 12px; margin-top: 6px; }
+    .checklist {
+      margin-top: 10px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(22,28,34,.6);
+    }
+    .check-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(38,48,58,.6);
+    }
+    .check-row:last-child { border-bottom: none; }
+    .check-row input { margin-top: 2px; }
+    .check-row .txt { font-size: 12px; color: var(--text); line-height: 1.45; }
+    .check-row .sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .inline-actions {
+      margin-top: 8px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+  </style>
+</body>
+</html>

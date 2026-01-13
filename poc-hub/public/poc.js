@@ -457,6 +457,108 @@
         why: "리포 구조/구현에 따라 상관 이벤트는 optional입니다. PROTO_TAMPER + collector 로그로도 충분히 PoC-E를 입증할 수 있습니다."
       }
     ]
+    },
+    "poc-f": {
+    expectedEventTypes: [
+      "DYN_SCRIPT_INSERT",
+      "PROTO_TAMPER",
+      "FORM_NATIVE_SUBMIT",
+      "FORM_SUBMIT",
+      "SUSP_NETWORK_CALL"
+    ],
+    expectedRuleIds: [
+      "DYN_SCRIPT_INSERT_CROSS_SITE",
+      "FORM_SUBMIT_PROTOTYPE_TAMPER",
+      "FORM_REQUESTSUBMIT_PROTOTYPE_TAMPER",
+      "FORM_SUBMIT_AFTER_PROTO_TAMPER",
+      "PHISHING_FORM_MISMATCH_AFTER_PROTO_TAMPER (optional)",
+      "NETWORK_LEAK"
+    ],
+    reproChecklist: [
+      {
+        title: "1) 메인 페이지 열기",
+        detail: "아래 버튼으로 MAIN(정상 로그인 폼 페이지 역할)을 엽니다.",
+        action: "open_main"
+      },
+      {
+        title: "2) BRS 확장(센서) 활성화 확인",
+        detail: "브라우저에서 BRS 확장이 켜져 있고, 해당 사이트에서 동작 중인지 확인합니다. (콘솔 로그/팝업/대시보드 등)",
+        action: "manual"
+      },
+      {
+        title: "3) 서드파티 SDK 로드(공급망) 확인",
+        detail: "MAIN이 THIRDPARTY SDK(sdk_submit_hook.js)를 로드합니다. DYN_SCRIPT_INSERT(crossSite=true)가 찍히는지 확인합니다.",
+        action: "open_third"
+      },
+      {
+        title: "4) 프로토타입 변조 탐지 확인",
+        detail: "SDK 로드 이후 HTMLFormElement.prototype.submit/requestSubmit 변조가 발생합니다. PROTO_TAMPER 이벤트와 ruleId(폼 submit/requestSubmit tamper)가 찍히는지 확인합니다.",
+        action: "manual"
+      },
+      {
+        title: "5) Normal Submit 트리거",
+        detail: "로그인 폼에 임의 값을 입력하고 Normal Submit(기본 제출)을 눌러 제출을 발생시킵니다. FORM_NATIVE_SUBMIT → FORM_SUBMIT 변환이 잡히는지 확인합니다.",
+        action: "manual"
+      },
+      {
+        title: "6) JS submit()/requestSubmit() 트리거",
+        detail: "페이지에 제공된 버튼이 있다면 form.submit() / form.requestSubmit() 경로를 각각 실행해봅니다. via 값(native_submit/requestSubmit)이 올바른지 확인합니다.",
+        action: "manual"
+      },
+      {
+        title: "7) 외부 동시 유출(sendBeacon/fetch) 확인",
+        detail: "THIRDPARTY가 /collect로 sendBeacon 또는 fetch를 호출합니다. SUSP_NETWORK_CALL 발생과 NETWORK_LEAK(ruleId) 매칭을 확인합니다.",
+        action: "manual"
+      }
+    ],
+    evidenceFields: [
+      {
+        title: "DYN_SCRIPT_INSERT (dom_mutation)",
+        keys: [
+          "type = DYN_SCRIPT_INSERT",
+          "data.src / data.abs",
+          "data.crossSite = true",
+          "data.targetOrigin (THIRDPARTY origin)"
+        ],
+        why: "서드파티 SDK 로드는 체인의 시작점입니다. PoC-F에서는 이 SDK가 폼 제출 프로토타입 변조 + 유출 네트워크를 유발하는 주체입니다."
+      },
+      {
+        title: "PROTO_TAMPER: HTMLFormElement.prototype.submit / requestSubmit",
+        keys: [
+          "type = PROTO_TAMPER",
+          "ruleId = FORM_SUBMIT_PROTOTYPE_TAMPER 또는 FORM_REQUESTSUBMIT_PROTOTYPE_TAMPER",
+          "data.target (예: HTMLFormElement.prototype.submit)",
+          "data.isNative = false",
+          "data.valueHead (toString head)",
+          "data.desc (writable/configurable/enumerable 등)",
+          "data.prevFp / data.nextFp"
+        ],
+        why: "submit/requestSubmit 같은 핵심 API의 프로토타입이 바뀌면, 브라우저 런타임 레벨에서 제출 훅킹(유출/조작)이 가능해집니다."
+      },
+      {
+        title: "FORM_NATIVE_SUBMIT → FORM_SUBMIT (page_hook → content 변환 + 상관 신호)",
+        keys: [
+          "type = FORM_NATIVE_SUBMIT (page_hook에서 발생)",
+          "type = FORM_SUBMIT (content.js 변환 후 룰 적용)",
+          "data.via = native_submit / requestSubmit",
+          "data.actionResolved, data.actionOrigin, data.pageOrigin",
+          "data.protoTamperSeen = true (구현에 따라 포함)",
+          "evidence.protoTamper.* (구현에 따라 포함)"
+        ],
+        why: "프로토타입 변조가 실제 제출 동작과 같은 세션에서 연결되면 확정성이 올라갑니다. (서버는 정상 처리처럼 보여도 브라우저 내부에서 변조+제출 연계가 근거가 됨)"
+      },
+      {
+        title: "SUSP_NETWORK_CALL (sendBeacon/fetch) → NETWORK_LEAK",
+        keys: [
+          "type = SUSP_NETWORK_CALL",
+          "data.api = sendBeacon / fetch",
+          "data.abs, data.targetOrigin",
+          "data.crossSite = true",
+          "ruleId = NETWORK_LEAK"
+        ],
+        why: "PoC-F의 핵심은 '정상 제출 유지'와 동시에 외부(/collect)로 유출 네트워크가 추가 발생하는 점입니다. proto tamper + submit + network call이 한 세션에 묶이면 가장 설득력이 강합니다."
+      }
+    ]
     }
   };
 
