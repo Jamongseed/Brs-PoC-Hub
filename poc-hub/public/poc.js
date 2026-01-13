@@ -45,6 +45,22 @@
       .map(([k, u]) => `${pocId}.${k} = ${u}`);
   }
 
+  function getLinkByKey(links, key) {
+    if (!links || !key) return "";
+    const u = links[key];
+    return isSetUrl(u) ? u : "";
+  }
+
+  function mkOpenBtn(label, links, key) {
+    const url = getLinkByKey(links, key);
+    const b = document.createElement("button");
+    b.className = "btn btn--ghost";
+    b.textContent = label;
+    b.disabled = !isSetUrl(url);
+    b.addEventListener("click", () => openUrl(url));
+    return b;
+  }
+
   const WRITEUPS = {
     "poc-a": {
       expectedEventTypes: [
@@ -356,6 +372,91 @@
         why: "PoC 내부가 MutationObserver로 href 변화를 감시하기 때문에, 등록/트리거 이벤트가 함께 기록될 수 있습니다. (핵심 판정은 href swap 전용 detector가 담당)"
         }
     ]
+    },
+    "poc-e": {
+    expectedEventTypes: [
+      "DYN_SCRIPT_INSERT",
+      "PROTO_TAMPER"
+    ],
+    expectedRuleIds: [
+      "DYN_SCRIPT_INSERT_CROSS_SITE",
+      "XHR_OPEN_PROTOTYPE_TAMPER",
+      "XHR_SEND_PROTOTYPE_TAMPER",
+      "XHR_SETREQUESTHEADER_PROTOTYPE_TAMPER",
+      "XHR_MIRRORING_SUSPECT (optional)"
+    ],
+    reproChecklist: [
+      {
+        title: "1) 메인 페이지 열기",
+        detail: "MAIN(정상 앱 역할) 페이지를 열고, 화면이 정상 표시되는지 확인합니다.",
+        action: "open:main"
+      },
+      {
+        title: "2) BRS 확장(센서) 활성화 확인",
+        detail: "BRS 확장이 켜져 있고, 해당 사이트에서 동작 중인지 확인합니다. (콘솔 로그/팝업/대시보드 등)",
+        action: "manual"
+      },
+      {
+        title: "3) Hook 스크립트 로딩(공급망) 확인",
+        detail: "MAIN이 외부 Hook 스크립트를 로드하도록 구성되어 있어야 합니다. (링크가 분리 배포라면 HOOK 도메인/URL이 설정되어야 합니다.)",
+        action: "open:hook"
+      },
+      {
+        title: "4) XHR 요청 트리거 실행",
+        detail: "MAIN 페이지에서 버튼을 눌러 XHR 요청을 발생시킵니다. 이때 원래 요청은 정상 응답을 받아야 합니다.",
+        action: "manual"
+      },
+      {
+        title: "5) Collector 로그로 미러링 확인",
+        detail: "Collector(c1/c2/c3)에서 /mirror 요청 로그가 동시에 찍히는지 확인합니다. (미러링은 네트워크 탭에서도 확인 가능)",
+        action: "open:collectors"
+      },
+      {
+        title: "6) 탐지 결과 확인",
+        detail: "아래 '기대 이벤트 타입 / 기대 Rule ID'가 찍히는지 확인하고, PROTO_TAMPER의 evidence/analysis가 왜 그렇게 나왔는지 확인합니다.",
+        action: "manual"
+      }
+    ],
+    evidenceFields: [
+      {
+        title: "DYN_SCRIPT_INSERT (dom_mutation)",
+        keys: [
+          "type = DYN_SCRIPT_INSERT",
+          "data.crossSite = true (hook script origin != page origin)",
+          "data.src / data.abs / data.targetOrigin"
+        ],
+        why: "외부(서드파티) 스크립트 로드는 체인의 시작점이 될 수 있습니다. PoC-E에서는 HOOK 스크립트가 XHR 후킹을 수행하는 주체입니다."
+      },
+      {
+        title: "PROTO_TAMPER: XHR.prototype.open / send / setRequestHeader",
+        keys: [
+          "type = PROTO_TAMPER",
+          "ruleId = XHR_OPEN_PROTOTYPE_TAMPER (또는 SEND/SETREQUESTHEADER)",
+          "data.isNative = false",
+          "data.analysis.suspicionScore",
+          "data.analysis.head (함수 바디 프리뷰)",
+          "evidence.desc (writable/configurable 등 descriptor 근거)"
+        ],
+        why: "XHR 핵심 메서드의 프로토타입이 바뀌면 네트워크 계층 후킹(유출/조작/로깅) 가능성이 커집니다. PoC-E는 이 후킹으로 요청을 여러 collector로 미러링합니다."
+      },
+      {
+        title: "미러링 행위 확인(collector / Network 탭)",
+        keys: [
+          "MAIN의 정상 XHR 응답은 정상적으로 표시되어야 함",
+          "동시에 c1/c2/c3 collector에 /mirror 요청이 복제되어 도착",
+          "(선택) request header에 x-brs-mirror 같은 구분 헤더 확인"
+        ],
+        why: "탐지는 '후킹 자체'를 근거로 하고, 실제 유출/복제 동작은 collector 로그와 브라우저 Network 탭에서 교차 확인하면 가장 명확합니다."
+      },
+      {
+        title: "XHR_MIRRORING_SUSPECT (optional)",
+        keys: [
+          "ruleId = XHR_MIRRORING_SUSPECT",
+          "PROTO_TAMPER + (네트워크 호출 상관 신호) 결합 시 발생"
+        ],
+        why: "리포 구조/구현에 따라 상관 이벤트는 optional입니다. PROTO_TAMPER + collector 로그로도 충분히 PoC-E를 입증할 수 있습니다."
+      }
+    ]
     }
   };
 
@@ -522,22 +623,24 @@
 
       if (step.action === "open_main") {
         const mainUrl = links.main || links.victim || "";
-        const b = document.createElement("button");
-        b.className = "btn btn--ghost";
-        b.textContent = "Open MAIN";
-        b.disabled = !isSetUrl(mainUrl);
-        b.addEventListener("click", () => openUrl(mainUrl));
-        actions.appendChild(b);
+        actions.appendChild(mkOpenBtn("Open MAIN", { main: mainUrl }, "main"));
       } else if (step.action === "open_third") {
         const thirdUrl = links.thirdparty || links.attacker || "";
-        const b = document.createElement("button");
-        b.className = "btn btn--ghost";
-        b.textContent = "Open THIRDPARTY";
-        b.disabled = !isSetUrl(thirdUrl);
-        b.addEventListener("click", () => openUrl(thirdUrl));
-        actions.appendChild(b);
+        actions.appendChild(mkOpenBtn("Open THIRDPARTY", { thirdparty: thirdUrl }, "thirdparty"));
       }
 
+      if (typeof step.action === "string" && step.action.startsWith("open:")) {
+        const key = step.action.slice("open:".length).trim();
+        if (key === "collectors") {
+          actions.appendChild(mkOpenBtn("Open C1", links, "c1"));
+          actions.appendChild(mkOpenBtn("Open C2", links, "c2"));
+          actions.appendChild(mkOpenBtn("Open C3", links, "c3"));
+        } else {
+          const label = "Open " + key.toUpperCase();
+          actions.appendChild(mkOpenBtn(label, links, key));
+        }
+      }
+    
       if (actions.childElementCount > 0) txt.appendChild(actions);
 
       row.appendChild(cb);
