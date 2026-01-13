@@ -1,14 +1,16 @@
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
+import fs from "fs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
 
-app.use(express.static(path.join(__dirname, "thirdparty")));
-
+const cand = path.join(__dirname, "thirdparty");
+const staticDir = fs.existsSync(cand) ? cand : __dirname;
+app.use(express.static(staticDir));
 
 app.get("/", (req, res) => {
   res
