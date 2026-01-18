@@ -16,7 +16,10 @@ app.get("/health", (req, res) => res.send("ok"));
 app.get("/runtime-config.js", (req, res) => {
   const cfg = {
     thirdOrigin: THIRD_ORIGIN,
-    injectedUrl: `${THIRD_ORIGIN}/injected.js`,
+    injectedUrl: `${THIRD_ORIGIN}/loader.js`,
+    loaderUrl: `${THIRD_ORIGIN}/loader.js`,
+    payloadB64Url: `${THIRD_ORIGIN}/payload.b64`,
+    mirrorUrl: `${THIRD_ORIGIN}/mirror`,
     collectorWs: COLLECTOR_WS
   };
 
