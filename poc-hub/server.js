@@ -21,7 +21,6 @@ function getDefaultConfig() {
             title: "PoC-A: Login (third-party script + iframe)",
             desc: "정상 로그인 UI에 서드파티 스크립트/iframe 체인을 붙이는 시나리오",
             links: { main: "", thirdparty: "" },
-            notes: ["main/thirdparty origin 분리"]
           },
           {
             id: "poc-b",
@@ -35,42 +34,36 @@ function getDefaultConfig() {
             title: "PoC-C: Third-party iframe + postMessage + form.action swap",
             desc: "서드파티 위젯이 postMessage 트리거로 제출 경로를 바꾸는 시나리오",
             links: { main: "", thirdparty: "" },
-            notes: ["main/thirdparty origin 분리"]
           },
           {
             id: "poc-d",
             title: "PoC-D: JIT href swap (pointerdown 직전 스왑)",
             desc: "클릭 직전 href를 스왑했다가 원복하는 링크 하이재킹",
             links: { main: "" },
-            notes: ["단일 origin도 가능하지만 별도 분리"]
           },
           {
             id: "poc-e",
             title: "PoC-E: XHR Mirroring (prototype hook)",
             desc: "XHR open/send 후킹으로 요청을 다중 collector로 미러링",
             links: { main: "", hook: "", c1: "", c2: "", c3: "" },
-            notes: ["main/hook/collectors origin 분리"]
           },
           {
             id: "poc-f",
             title: "PoC-F: Form submit prototype hook",
             desc: "form.submit/requestSubmit 후킹으로 제출 흐름 개입",
             links: { main: "", thirdparty: "" },
-            notes: ["main/thirdparty origin 분리"]
           },
           {
             id: "poc-g",
             title: "PoC-G: Service Worker persistence",
             desc: "SW 등록/지속성으로 응답 변조/퍼시스턴스 재현",
             links: { victim: "", attacker: "" },
-            notes: ["반드시 origin 격리", "테스트 후 사이트 데이터 삭제 가이드 필요"]
           },
           {
             id: "poc-h",
             title: "PoC-H: Script injection chain",
             desc: "동적 스크립트 삽입 체인을 재현 (데모 목적)",
             links: { main: "", thirdparty: "", ws: "" },
-            notes: ["민감데이터 수집 금지", "origin 격리"]
           }
         ]
       }
@@ -87,7 +80,7 @@ function getDefaultConfig() {
       {
         title: "권장 테스트 순서(오염 방지)",
         steps: [
-          "B → D → A/C/F/E → (마지막에) G",
+          "B → D → A/C/F/E → H → (마지막) G",
           "G 실행 후 반드시 사이트 데이터 삭제"
         ]
       }

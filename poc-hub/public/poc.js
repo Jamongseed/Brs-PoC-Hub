@@ -681,105 +681,147 @@
         "DYN_SCRIPT_INSERT",
         "DYN_IFRAME_INSERT",
         "MUTATION_OBSERVER_REGISTER",
-        "MUTATION_OBSERVER_TRIGGER"
+        "MUTATION_OBSERVER_TRIGGER",
+
+        // 2-stage 로딩(디코드/실행) 근거
+        "SUSP_ATOB_CALL",
+        "SUSP_FUNCTION_CONSTRUCTOR_CALL",
+
+        // stage2 동작(프로토타입 후킹)
+        "PROTO_TAMPER",
+
+        // (선택) stage2 제거 후 재주입 시 gate.js가 postMessage로 발생
+        "PERSISTENCE_REINJECT"
       ],
       expectedRuleIds: [
         "DYN_SCRIPT_INSERT_CROSS_SITE",
-        "IFRAME_INSERT_INITIATED_BY_CROSS_SITE_SCRIPT (optional)",
-        "MUTATION_OBSERVER_REGISTER_BASE",
-        "MUTATION_OBSERVER_REGISTER_WIDE_SCOPE (optional)",
-        "MUTATION_OBSERVER_TRIGGER_SCRIPT_OR_IFRAME_ADDED (optional)"
+        "IFRAME_INSERT_INITIATED_BY_CROSS_SITE_SCRIPT",
+        "IFRAME_INSERT",
+
+        "MUTATION_OBSERVER_REGISTER",
+        "MUTATION_OBSERVER_REGISTER_WIDE_SCOPE",
+        "MUTATION_OBSERVER_REGISTER_CROSS_SITE_INITIATOR",
+        "MUTATION_OBSERVER_TRIGGER_SCRIPT_OR_IFRAME_ADDED",
+
+        "OBFUSCATION_ATOB",
+        "DYNAMIC_CODE_FUNCTION",
+
+        "XHR_OPEN_PROTOTYPE_TAMPER",
+        "XHR_SEND_PROTOTYPE_TAMPER",
+
+        "PERSISTENCE_REINJECT"
       ],
       reproChecklist: [
         {
           title: "1) 메인 페이지 열기",
-          detail: "아래 버튼으로 MAIN(위젯이 표시되는 정상 페이지)을 엽니다.",
+          detail: "아래 버튼으로 MAIN(정상 페이지)을 엽니다.",
           action: "open_main"
         },
         {
           title: "2) BRS 확장(센서) 활성화 확인",
-          detail: "BRS 확장이 켜져 있고, 해당 사이트에서 동작 중인지 확인합니다. (콘솔 로그/팝업/대시보드 등)",
+          detail: "BRS 확장이 켜져 있고, 해당 사이트에서 이벤트가 수집되는지 확인합니다. (콘솔/팝업/대시보드 등)",
           action: "manual"
         },
         {
-          title: "3) 서드파티 SDK/위젯 로드 확인",
-          detail: "MAIN이 THIRDPARTY의 sdk.js를 로드하고, iframe 위젯(widget.html)이 DOM에 삽입되는지 확인합니다.",
+          title: "3) 서드파티 위젯 표시 확인",
+          detail: "MAIN 우측 하단에 위젯(iframe)이 표시되는지 확인합니다. (THIRDPARTY sdk.js가 삽입한 위젯)",
+          action: "manual"
+        },
+        {
+          title: "4) 위젯 닫기 버튼 클릭",
+          detail: "위젯의 X 버튼을 눌러 위젯 컨테이너 DOM이 제거되도록 합니다. 이 동작이 트리거입니다.",
+          action: "manual"
+        },
+        {
+          title: "5) stage2 활성화 확인",
+          detail: "위젯 제거 직후 loader.js가 삽입되고 payload.b64가 실행되면, 페이지 상단에 배지/상태 변화가 나타납니다. (또는 DOM에 script#pocH_stage2가 생깁니다.)",
+          action: "manual"
+        },
+        {
+          title: "6) MAIN에서 Test XHR 요청 보내기 버튼 클릭",
+          detail: "MAIN에 있는 'Test XHR 요청 보내기' 버튼을 눌러 XHR 요청을 발생시킵니다. stage2가 활성화되어 있다면 XHR 후킹이 동작합니다.",
+          action: "manual"
+        },
+        {
+          title: "7) THIRDPARTY 서버의 /mirror 로그 확인",
+          detail: "stage2는 요청 메타를 /mirror로 미러링합니다. THIRDPARTY 서버 콘솔 로그에 [mirror] 라인이 찍히는지 확인합니다.",
           action: "open_third"
         },
         {
-          title: "4) MutationObserver 등록 이벤트 확인",
-          detail: "gate.js가 DOM 변화를 감시하기 위해 MutationObserver.observe를 등록합니다. MUTATION_OBSERVER_REGISTER 이벤트가 발생했는지 확인합니다.",
-          action: "manual"
-        },
-        {
-          title: "5) 위젯 닫기(트리거) 실행",
-          detail: "페이지 우하단(또는 지정 위치)의 위젯에서 닫기를 눌러 위젯 컨테이너 DOM이 제거되도록 합니다. 이 순간이 트리거입니다.",
-          action: "manual"
-        },
-        {
-          title: "6) 트리거 이후 추가 삽입 확인",
-          detail: "위젯 제거 직후 MAIN이 injected.js(THIRDPARTY origin)를 동적으로 삽입합니다. MUTATION_OBSERVER_TRIGGER 및 DYN_SCRIPT_INSERT(crossSite=true)가 이어지는지 확인합니다.",
-          action: "manual"
-        },
-        {
-          title: "7) (선택) Collector/텔레메트리 확인",
-          detail: "구성에 따라 injected.js가 ws/collect endpoint로 키 입력 등 텔레메트리를 보낼 수 있습니다. (PoC 내부 로그/서버 로그로 확인)",
+          title: "8) (선택) Injected 제거(방어자) 버튼 클릭 후 재주입 확인",
+          detail: "MAIN에서 'Injected 제거(방어자)' 버튼으로 script#pocH_stage2를 제거해봅니다. gate.js가 제거를 감지하면 재주입을 시도하며, PERSISTENCE_REINJECT 이벤트가 함께 발생할 수 있습니다. (쿨다운이 있어 즉시 재주입이 안 될 수도 있음)",
           action: "manual"
         }
       ],
       evidenceFields: [
         {
-          title: "DYN_SCRIPT_INSERT (cross-site SDK 로드)",
+          title: "DYN_SCRIPT_INSERT: sdk.js / loader.js (dom_mutation)",
           keys: [
             "type = DYN_SCRIPT_INSERT",
-            "data.src / data.abs (sdk.js)",
+            "data.src, data.abs",
             "data.crossSite = true",
-            "data.targetOrigin (THIRDPARTY origin)"
+            "data.initiatorUrl, data.initiatorOrigin, data.initiatorCrossSite (가능한 경우)"
           ],
-          why: "체인의 시작점입니다. MAIN이 외부(THIRDPARTY) 스크립트를 로드한 정황을 남깁니다."
+          why: "PoC-H는 THIRDPARTY 스크립트(sdk.js)를 로드한 뒤, 트리거 이후 추가로 THIRDPARTY loader.js를 동적으로 삽입합니다. 외부 스크립트 로드가 단계적으로 이어지는지가 핵심입니다."
         },
         {
-          title: "DYN_IFRAME_INSERT (위젯 iframe 삽입) + initiatorCrossSite",
+          title: "DYN_IFRAME_INSERT: widget.html + initiator provenance",
           keys: [
             "type = DYN_IFRAME_INSERT",
-            "data.src / data.abs (widget.html)",
-            "data.hidden = false (대부분)",
-            "data.initiatorUrl / data.initiatorOrigin",
-            "data.initiatorCrossSite = true (provenance가 잡히면)"
+            "data.src, data.abs (widget.html)",
+            "data.hidden (위젯은 보이는 iframe이면 보통 false)",
+            "data.initiatorUrl / data.initiatorOrigin / data.initiatorCrossSite (가능한 경우)"
           ],
-          why: "외부 스크립트가 iframe을 동적으로 삽입하는 패턴은 위젯/광고에서도 가능하지만, provenance(누가 넣었는지)가 확보되면 위험도가 상승합니다."
+          why: "THIRDPARTY sdk.js가 iframe 위젯을 삽입합니다. initiatorCrossSite 근거가 잡히면, 누가 삽입했는지까지 연결돼 신뢰도가 올라갑니다."
         },
         {
-          title: "MUTATION_OBSERVER_REGISTER (관측자 등록)",
+          title: "MUTATION_OBSERVER_REGISTER: gate.js observe",
           keys: [
             "type = MUTATION_OBSERVER_REGISTER",
             "data.targetDesc (예: documentElement)",
-            "data.options.childList / subtree (wide-scope 여부)",
-            "data.initiatorUrl / data.initiatorOrigin",
-            "data.stackHead 또는 evidence.stack"
+            "data.options.childList, data.options.subtree",
+            "data.initiatorUrl / data.initiatorOrigin / data.initiatorCrossSite"
           ],
-          why: "광범위(childList+subtree) MutationObserver 등록은 ‘특정 DOM 변화 기반 트리거’ 설계를 강하게 시사합니다. 단독으로는 정상 케이스도 많아 정보성 신호로 시작합니다."
+          why: "gate.js가 DOM 변화 감시를 위해 MutationObserver를 등록합니다. wide-scope(childList+subtree) 관측은 트리거 기반 동작을 구성할 때 자주 사용됩니다."
         },
         {
-          title: "MUTATION_OBSERVER_TRIGGER (removedNodes/addedNodes) + 직후 삽입",
+          title: "MUTATION_OBSERVER_TRIGGER: 위젯 제거 / stage2 제거 등",
           keys: [
             "type = MUTATION_OBSERVER_TRIGGER",
-            "data.summary.removedNodes / addedNodes",
-            "data.summary.addedScripts / addedIframes (구현/룰셋 키에 따라 optional)",
-            "trigger 직후 DYN_SCRIPT_INSERT가 이어지는지(타임라인 상관)"
+            "data.observerId, data.targetDesc",
+            "data.summary.removedNodes, data.summary.addedNodes",
+            "data.summary.addedScripts / addedIframes (구현에 따라 존재)"
           ],
-          why: "PoC-H의 핵심은 ‘사용자 행동(위젯 닫기) → DOM 제거 → MO 트리거 → 추가 스크립트 삽입’의 연쇄입니다. 트리거 직후 cross-site 삽입이 이어지면 악성 체인 확정성이 올라갑니다."
+          why: "트리거는 위젯 DOM 제거입니다. 추가로 stage2(script#pocH_stage2)를 제거했을 때도 removedNodes로 잡힐 수 있어, 재주입 흐름을 확인할 때 중요합니다."
         },
         {
-          title: "동적 삽입된 injected.js (cross-site payload)",
+          title: "2-stage 실행 근거: atob + Function",
           keys: [
-            "type = DYN_SCRIPT_INSERT",
-            "data.src / data.abs (injected.js)",
-            "data.crossSite = true",
-            "data.initiatorCrossSite (있으면 false일 수 있음: gate.js는 same-site)",
-            "injected.js 실행 흔적(배지 표시/네트워크/WS 로그 등)"
+            "type = SUSP_ATOB_CALL → ruleId = OBFUSCATION_ATOB",
+            "type = SUSP_FUNCTION_CONSTRUCTOR_CALL → ruleId = DYNAMIC_CODE_FUNCTION",
+            "각 이벤트의 data.payload / data.len (프리뷰)"
           ],
-          why: "결과적으로 메인 문서 컨텍스트에 cross-site payload가 주입되어 실행됩니다. 서버/WAF 관점에서는 정상 페이지 동작처럼 보일 수 있어, 런타임 관측(탐지) 가치가 큽니다."
+          why: "loader.js는 payload.b64를 atob로 디코딩하고, new Function(code)로 stage2를 실행합니다. 이 두 이벤트는 stage2 실행이 실제로 일어났다는 강한 근거가 됩니다."
+        },
+        {
+          title: "PROTO_TAMPER: XHR.prototype.open / send",
+          keys: [
+            "type = PROTO_TAMPER",
+            "ruleId = XHR_OPEN_PROTOTYPE_TAMPER / XHR_SEND_PROTOTYPE_TAMPER",
+            "data.target (예: XMLHttpRequest.prototype.open)",
+            "data.isNative = false",
+            "data.analysis.head (함수 바디 프리뷰)"
+          ],
+          why: "stage2는 XHR 프로토타입을 후킹해 요청 정보를 가로채고, /mirror로 미러링합니다. 프로토타입 변조 자체가 런타임 변조의 핵심 증거입니다."
+        },
+        {
+          title: "(선택) PERSISTENCE_REINJECT: stage2 제거 후 재주입 알림",
+          keys: [
+            "type = PERSISTENCE_REINJECT",
+            "ruleId = PERSISTENCE_REINJECT",
+            "data.from, data.removedId, data.ts"
+          ],
+          why: "Injected 제거(방어자) 버튼으로 stage2를 지우면, gate.js가 이를 감지해 재주입을 시도하고 postMessage로 알림을 보냅니다. 제거-재주입 흐름이 보이면 지속성 패턴을 사용자가 쉽게 이해할 수 있습니다."
         }
       ]
     }
@@ -819,7 +861,7 @@
   document.title = (item.title || pocId) + " - Detail";
 
   if (detailTitle) detailTitle.textContent = cfg.hubTitle || "BRS PoC Hub";
-  if (detailSub) detailSub.textContent = `poc: ${pocId} · updated: ${cfg.updatedAt || "-"}`;
+  if (detailSub) detailSub.textContent = `poc: ${pocId}`;
 
   if (pocTitle) pocTitle.textContent = item.title || pocId;
   if (pocDesc) pocDesc.textContent = item.desc || "";

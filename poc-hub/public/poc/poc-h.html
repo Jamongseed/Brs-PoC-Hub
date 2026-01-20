@@ -34,29 +34,33 @@
     <section class="panel">
       <h2>PoC-H 시나리오 요약</h2>
       <div class="hint">
-        정상 페이지(MAIN)가 서드파티 위젯(THIRDPARTY)을 로드한 상태에서,
-        사용자의 정상 행동(위젯 닫기)으로 발생한 DOM 변화(removedNodes)를
-        <code>MutationObserver</code>로 감지하고,
-        그 순간 추가 스크립트(<code>injected.js</code>)를 동적으로 삽입하는 체인을 데모합니다.
+        MAIN(메인 페이지)이 THIRDPARTY(서드파티) 위젯을 로드한 상태에서,
+        사용자가 위젯의 닫기 버튼을 누르는 순간(위젯 DOM 제거)을
+        <code>MutationObserver</code>가 감지해 추가 스크립트(<code>loader.js</code>)를 동적으로 삽입합니다.
         <br/><br/>
-        핵심은 “로드 직후엔 깨끗해 보이는데, 특정 DOM 변화가 트리거가 되어”
-        cross-site payload가 메인 컨텍스트에서 실행되는 형태입니다.
+        이후 <code>loader.js</code>는 <code>payload.b64</code>를 받아 <code>atob</code>로 디코딩하고,
+        디코딩된 stage2 스크립트를 페이지에 <code>&lt;script id="pocH_stage2"&gt;</code> 형태로 삽입해 실행합니다.
+        stage2는 화면 배지를 표시하고, <code>XMLHttpRequest</code> 프로토타입을 후킹하여
+        MAIN에서 발생하는 XHR 요청 메타를 <code>/mirror</code> 엔드포인트로 미러링합니다.
       </div>
 
       <ol class="guide__steps">
-        <li><b>서드파티 로드</b>: MAIN이 THIRDPARTY SDK(<code>sdk.js</code>)를 로드</li>
-        <li><b>위젯 삽입</b>: SDK가 <code>iframe(widget.html)</code>을 DOM에 주입</li>
-        <li><b>트리거</b>: 사용자가 위젯 닫기 → 위젯 컨테이너 DOM 제거</li>
-        <li><b>MO 감지</b>: MAIN의 <code>gate.js</code>가 removedNodes를 감지</li>
-        <li><b>추가 삽입</b>: 감지 직후 <code>injected.js</code>를 cross-site로 동적 로드</li>
+        <li><b>서드파티 로드</b>: MAIN이 THIRDPARTY <code>sdk.js</code>를 로드</li>
+        <li><b>위젯 삽입</b>: <code>sdk.js</code>가 <code>iframe(widget.html)</code>을 DOM에 삽입</li>
+        <li><b>트리거</b>: 사용자가 위젯 닫기 버튼 클릭 → 위젯 컨테이너 DOM 제거</li>
+        <li><b>MO 감지</b>: MAIN의 <code>gate.js</code>가 DOM 제거(removedNodes)를 감지</li>
+        <li><b>1차 로딩</b>: 감지 직후 THIRDPARTY의 <code>loader.js</code>를 동적 삽입</li>
+        <li><b>2차 실행</b>: <code>loader.js</code>가 <code>payload.b64</code> → <code>atob</code> → stage2 실행</li>
+        <li><b>후킹/미러링</b>: stage2가 XHR 후킹 활성화 + <code>/mirror</code>로 요청 메타 미러링</li>
       </ol>
 
       <div class="note">
         <div><b>주의</b></div>
         <ul>
-          <li>이 PoC는 데모 목적입니다. 실제 개인정보/민감정보를 입력하지 마세요.</li>
-          <li>PoC-H는 단일 이벤트보다 “연쇄 패턴”이 핵심입니다. (MO 등록 → 트리거 → cross-site script 삽입)</li>
-          <li>룰셋 상태에 따라 일부 룰은 “BASE로만 기록”되거나 “조건 미스매치”로 승격이 안 될 수 있습니다. (아래 Evidence 항목 참고)</li>
+          <li>데모 목적입니다. 실제 계정/민감정보를 입력하지 마세요.</li>
+          <li>stage2는 <code>script#pocH_stage2</code>로 삽입됩니다. 페이지에서 “Injected 제거(방어자)” 버튼으로 제거할 수 있습니다.</li>
+          <li>제거 후에는 <code>gate.js</code>가 제거 이벤트를 감지해 재주입을 시도할 수 있습니다. (쿨다운이 걸릴 수 있음)</li>
+          <li>stage2의 미러링 요청은 브라우저에서 정상 UI처럼 보이기 쉬워서, THIRDPARTY 서버 로그(또는 Network 탭의 <code>/mirror</code> 요청)로 확인하는 것이 가장 확실합니다.</li>
         </ul>
       </div>
     </section>
@@ -101,7 +105,7 @@
     </section>
 
     <footer class="footer">
-      <span>Detail page: PoC-H template + runtime-config로 링크 주입</span>
+      <span>Detail page: PoC-H template</span>
     </footer>
   </main>
 
