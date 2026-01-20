@@ -918,11 +918,7 @@
 
   const notes = Array.isArray(item.notes) ? item.notes : [];
   if (pocNotes) {
-    if (!notes.length) {
-      pocNotes.innerHTML = `<div>Notes</div><div class="hint">No notes</div>`;
-    } else {
-      pocNotes.innerHTML = `<div>Notes</div><ul>${notes.map(n => `<li>${esc(n)}</li>`).join("")}</ul>`;
-    }
+    pocNotes.remove();
   }
 
   if (btnCopyLinks) {

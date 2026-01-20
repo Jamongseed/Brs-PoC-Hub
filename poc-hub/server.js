@@ -27,11 +27,10 @@ function getDefaultConfig() {
             title: "PoC-B: Invisible Layer (click hijack)",
             desc: "투명 오버레이로 클릭을 가로채서 강제 이동",
             links: { main: "" },
-            notes: ["단일 origin으로도 동작"]
           },
           {
             id: "poc-c",
-            title: "PoC-C: Third-party iframe + postMessage + form.action swap",
+            title: "PoC-C: Third-party iframe + postMessage + form swap",
             desc: "서드파티 위젯이 postMessage 트리거로 제출 경로를 바꾸는 시나리오",
             links: { main: "", thirdparty: "" },
           },
