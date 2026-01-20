@@ -176,8 +176,7 @@
 
   function initHeader() {
     if (hubTitle) hubTitle.textContent = cfg.hubTitle || "BRS PoC Hub";
-    const updated = cfg.updatedAt ? `updated: ${cfg.updatedAt}` : "";
-    if (hubMeta) hubMeta.textContent = updated;
+    if (hubMeta) hubMeta.textContent = "";
   }
 
   function initButtons() {
