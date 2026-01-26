@@ -824,6 +824,86 @@
           why: "Injected 제거(방어자) 버튼으로 stage2를 지우면, gate.js가 이를 감지해 재주입을 시도하고 postMessage로 알림을 보냅니다. 제거-재주입 흐름이 보이면 지속성 패턴을 사용자가 쉽게 이해할 수 있습니다."
         }
       ]
+    },
+    "poc-h-obf": {
+      expectedEventTypes: [
+        "DYN_SCRIPT_INSERT",
+        "DYN_IFRAME_INSERT",
+        "MUTATION_OBSERVER_REGISTER",
+        "MUTATION_OBSERVER_TRIGGER",
+        "SUSP_ATOB_CALL",
+        "SUSP_FUNCTION_CONSTRUCTOR_CALL"
+      ],
+      expectedRuleIds: [
+        "DYN_SCRIPT_INSERT_SAME_SITE",
+        "DYN_SCRIPT_INSERT_CROSS_SITE",
+        "IFRAME_INSERT_INITIATED_BY_CROSS_SITE_SCRIPT",
+        "MUTATION_OBSERVER_REGISTER",
+        "MUTATION_OBSERVER_TRIGGER"
+      ],
+      reproChecklist: [
+        {
+          title: "1) 메인 페이지 열기",
+          detail: "아래 버튼으로 MAIN(정상 페이지)을 엽니다.",
+          action: "open_main"
+        },
+        {
+          title: "2) BRS 확장(센서) 활성화 확인",
+          detail: "BRS 확장이 켜져 있고, 해당 사이트에서 이벤트가 수집되는지 확인합니다. (콘솔/팝업/대시보드 등)",
+          action: "manual"
+        },
+        {
+          title: "3) 서드파티 위젯 표시 확인",
+          detail: "MAIN 우측 하단에 위젯(iframe)이 표시되는지 확인합니다. (THIRDPARTY sdk.js가 삽입한 위젯)",
+          action: "manual"
+        },
+        {
+          title: "4) 위젯 닫기 버튼 클릭",
+          detail: "위젯의 X 버튼을 눌러 위젯 컨테이너 DOM이 제거되도록 합니다. (트리거)",
+          action: "manual"
+        },
+        {
+          title: "5) 난독화 체인 활성화 정황 확인",
+          detail: "위젯 제거 직후 동적 삽입/실행이 일어나면, 배지/상태 변화 또는 추가 스크립트가 DOM에 나타납니다.",
+          action: "manual"
+        },
+        {
+          title: "6) (선택) THIRDPARTY 오리진 직접 열기",
+          detail: "공급망 역할(외부 스크립트 제공)을 확인합니다.",
+          action: "open_third"
+        }
+      ],
+      evidenceFields: [
+        {
+          title: "DYN_SCRIPT_INSERT / DYN_IFRAME_INSERT (dom_mutation)",
+          keys: [
+            "type = DYN_SCRIPT_INSERT 또는 DYN_IFRAME_INSERT",
+            "data.src, data.abs, data.targetOrigin",
+            "data.crossSite (targetOrigin !== location.origin)",
+            "data.initiatorCrossSite (외부 initiator 유도 여부)"
+          ],
+          why: "외부(서드파티)에서 들어온 코드가 다시 동적 삽입을 유도하는 체인은 공급망/로더 패턴으로 위험도가 상승합니다."
+        },
+        {
+          title: "MutationObserver 기반 트리거",
+          keys: [
+            "type = MUTATION_OBSERVER_REGISTER",
+            "type = MUTATION_OBSERVER_TRIGGER",
+            "data.targetDesc / data.options",
+            "data.summary.removedNodes (위젯 제거 트리거 근거)"
+          ],
+          why: "사용자 동작(위젯 제거 등)을 신호로 삼아 런타임 주입이 발생하는 전형적인 트리거 패턴입니다."
+        },
+        {
+          title: "난독화/동적 실행 근거(page_hook)",
+          keys: [
+            "type = SUSP_ATOB_CALL",
+            "type = SUSP_FUNCTION_CONSTRUCTOR_CALL",
+            "evidence.stack 또는 data.summary.*"
+          ],
+          why: "정적 분석/탐지 회피를 위해 디코드(atob) + 동적 실행(Function)을 사용하는 흔한 패턴입니다."
+        }
+      ]
     }
   };
 

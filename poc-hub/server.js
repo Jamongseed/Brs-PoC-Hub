@@ -63,6 +63,12 @@ function getDefaultConfig() {
             title: "PoC-H: Script injection chain",
             desc: "동적 스크립트 삽입 체인을 재현 (데모 목적)",
             links: { main: "", thirdparty: "", ws: "" },
+          },
+          {
+            id: "poc-h-obf",
+            title: "PoC-H-OBF: Script injection 난독화 chain",
+            desc: "PoC-H 체인을 난독화/은닉 형태로 재현 (Render 배포용)",
+            links: { main: "", thirdparty: "", ws: "" },
           }
         ]
       }
@@ -115,7 +121,8 @@ app.get("/runtime-config.js", (req, res) => {
     },
     "poc-f": { main: process.env.POC_F_MAIN || "", thirdparty: process.env.POC_F_THIRD || "" },
     "poc-g": { victim: process.env.POC_G_VICTIM || "", attacker: process.env.POC_G_ATTACKER || "" },
-    "poc-h": { main: process.env.POC_H_MAIN || "", thirdparty: process.env.POC_H_THIRD || "", ws: process.env.POC_H_WS || "" }
+    "poc-h": { main: process.env.POC_H_MAIN || "", thirdparty: process.env.POC_H_THIRD || "", ws: process.env.POC_H_WS || "" },
+    "poc-h-obf": { main: process.env.POC_H_OBF_MAIN || "", thirdparty: process.env.POC_H_OBF_THIRD || "", ws: process.env.POC_H_OBF_WS || ""}
   };
 
   const base = parsed && typeof parsed === "object" ? parsed : getDefaultConfig();
