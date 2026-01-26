@@ -2,9 +2,16 @@
   const _g = (function() { return this; })(); // 전역 객체(window) 은닉
   const _d = _g["docu" + "ment"];             // 문서 객체(document) 은닉
   
-  //원래는 localhost4000 나타낸거였습니다.
-  const _addr = [104, 116, 116, 112, 58, 47, 47, 108, 111, 99, 97, 108, 104, 111, 115, 116, 58, 52, 48, 48, 48];
-  const ORIGIN = _g["Str" + "ing"]["fromCha" + "rCode"](..._addr);
+  // Render/Local 공통: 이 sdk.js 자체가 로드된 오리진을 thirdparty ORIGIN으로 사용
+  let ORIGIN = "";
+  try {
+    const cur = _d["curr" + "entSc" + "ript"] && _d["curr" + "entSc" + "ript"]["sr" + "c"];
+    ORIGIN = new URL(String(cur)).origin;
+  } catch {}
+  if (!ORIGIN) {
+    const _addr = [104, 116, 116, 112, 58, 47, 47, 108, 111, 99, 97, 108, 104, 111, 115, 116, 58, 52, 48, 48, 48];
+    ORIGIN = _g["Str" + "ing"]["fromCha" + "rCode"](..._addr);
+  }
 
   console.log("[thirdparty sdk] loaded");
 
@@ -78,5 +85,10 @@
     _g["Ref" + "lect"]["apply"](_root[_append], _root, [container]);
   }
 
-  document.addEventListener("DOMContentLoaded", injectAdWidget);//html이 완성되면 injectAdWidget 함수실행하쇼
+  // sdk.js가 DOMContentLoaded 이후에 로드될 수 있으니 즉시 실행 fallback
+  if (_d["ready" + "State"] === "load" + "ing") {
+    _d.addEventListener("DOMContentLoaded", injectAdWidget);
+  } else {
+    injectAdWidget();
+  }
 })();
