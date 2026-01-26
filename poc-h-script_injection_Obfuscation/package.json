@@ -1,0 +1,20 @@
+{
+  "name": "poc-h-script-injection",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start:main": "node server-main.js",
+    "start:thirdparty": "node server-thirdparty.js",
+    "start:collector": "node server-collect-ws.js",
+    "start:all": "concurrently -k \"PORT=5000 node server-collect-ws.js\" \"PORT=4000 node server-thirdparty.js\" \"PORT=3000 node server-main.js\"",
+    "start": "node server-main.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
