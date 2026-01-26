@@ -17,6 +17,13 @@ function getDefaultConfig() {
         title: "PoCs",
         items: [
           {
+            id: "poc-AI-test",
+            title: "PoC-AI-Test: Script Verdict Regression",
+            desc: "인라인 스크립트 2종 주입 → score(mid) → /dumps(OpenAI) → AI verdict 이벤트",
+            links: { main: "" },
+            tags: ["ai", "script-dump", "regression"]
+          },
+          {
             id: "poc-a",
             title: "PoC-A: Login (third-party script + iframe)",
             desc: "정상 로그인 UI에 서드파티 스크립트/iframe 체인을 붙이는 시나리오",
@@ -69,7 +76,7 @@ function getDefaultConfig() {
             title: "PoC-H-OBF: Script injection 난독화 chain",
             desc: "PoC-H 체인을 난독화/은닉 형태로 재현 (Render 배포용)",
             links: { main: "", thirdparty: "", ws: "" },
-          }
+          },
         ]
       }
     ],
@@ -122,7 +129,8 @@ app.get("/runtime-config.js", (req, res) => {
     "poc-f": { main: process.env.POC_F_MAIN || "", thirdparty: process.env.POC_F_THIRD || "" },
     "poc-g": { victim: process.env.POC_G_VICTIM || "", attacker: process.env.POC_G_ATTACKER || "" },
     "poc-h": { main: process.env.POC_H_MAIN || "", thirdparty: process.env.POC_H_THIRD || "", ws: process.env.POC_H_WS || "" },
-    "poc-h-obf": { main: process.env.POC_H_OBF_MAIN || "", thirdparty: process.env.POC_H_OBF_THIRD || "", ws: process.env.POC_H_OBF_WS || ""}
+    "poc-h-obf": { main: process.env.POC_H_OBF_MAIN || "", thirdparty: process.env.POC_H_OBF_THIRD || "", ws: process.env.POC_H_OBF_WS || ""},
+    "poc-AI-test": { main: process.env.POC_AI_TEST_MAIN || ""}
   };
 
   const base = parsed && typeof parsed === "object" ? parsed : getDefaultConfig();

@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>PoC-AI-Test</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body data-poc-id="poc-AI-test">
+  <main class="poc-detail">
+    <a class="back" href="/">← Back</a>
+
+    <header class="hdr">
+      <h1 class="title" id="title">PoC-AI-Test</h1>
+      <p class="desc" id="desc"></p>
+      <div class="links" id="links"></div>
+    </header>
+
+    <section class="grid">
+      <article class="card">
+        <h2>개요</h2>
+        <p>
+          AI 판별 파이프라인이 살아있는지를 <b>E2E</b>로 확인하는 회귀 테스트 PoC입니다.
+          버튼 클릭으로 인라인 스크립트를 주입하면 확장프로그램이 덤프/스코어링하고,
+          score가 중간(50~79)이면 /dumps에서 OpenAI 판정 후 AI verdict 이벤트를 추가로 기록합니다.
+        </p>
+      </article>
+
+      <article class="card">
+        <h2>체크리스트</h2>
+        <div id="checklist"></div>
+      </article>
+
+      <article class="card">
+        <h2>Expected</h2>
+        <div class="two">
+          <div>
+            <h3>Event Types</h3>
+            <ul id="expectedEventTypes"></ul>
+          </div>
+          <div>
+            <h3>Rule IDs</h3>
+            <ul id="expectedRuleIds"></ul>
+          </div>
+        </div>
+      </article>
+
+      <article class="card" style="grid-column: 1 / -1;">
+        <h2>Live Test (Embedded MAIN)</h2>
+        <p style="margin-top:8px;color:#666;font-size:13px;line-height:1.5;">
+          아래 iframe은 <code>POC_AI_TEST_MAIN</code>(MAIN)을 내장합니다.
+          MAIN에서 BENIGN/MALICIOUS 버튼을 눌러 트리거하고, 우측 체크를 수동으로 완료하세요.
+        </p>
+
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:12px;align-items:center;">
+          <span id="liveStatus" class="hint">waiting: POC_AI_TEST_MAIN</span>
+          <button id="btnReloadFrame" class="btn btn--ghost" type="button">Reload iframe</button>
+          <button id="btnMarkAllPass" class="btn" type="button">Mark all PASS</button>
+          <button id="btnResetPass" class="btn btn--ghost" type="button">Reset</button>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 360px;gap:12px;margin-top:12px;align-items:start;">
+          <div style="min-height:520px;border:1px solid #eee;border-radius:12px;overflow:hidden;background:#fff;">
+            <iframe
+              id="mainFrame"
+              title="PoC-AI-Test MAIN"
+              referrerpolicy="no-referrer"
+              sandbox="allow-scripts allow-forms allow-same-origin allow-popups"
+              style="width:100%;height:520px;border:0;"
+            ></iframe>
+          </div>
+
+          <div>
+            <div class="hint" style="margin-bottom:10px;">
+              PASS/FAIL는 대시보드(Threat_Events) 확인 후 수동 체크용입니다.
+            </div>
+            <div id="passFail" class="checklist"></div>
+          </div>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <script src="/runtime-config.js"></script>
+  <script src="/poc.js"></script>
+  <script>
+    (function () {
+      const cfg = window.__HUB_CONFIG__ || {};
+      const pocId = "poc-ai-test";
+
+      function findItemById(id) {
+        const groups = Array.isArray(cfg.groups) ? cfg.groups : [];
+        for (const g of groups) {
+          const items = Array.isArray(g.items) ? g.items : [];
+          for (const it of items) if (it && it.id === id) return it;
+        }
+        return null;
+      }
+
+      const item = findItemById(pocId);
+      const links = (item && item.links) ? item.links : {};
+      const mainUrl = typeof links.main === "string" ? links.main : "";
+
+      const frame = document.getElementById("mainFrame");
+      const st = document.getElementById("liveStatus");
+      const box = document.getElementById("passFail");
+      const btnReload = document.getElementById("btnReloadFrame");
+      const btnAll = document.getElementById("btnMarkAllPass");
+      const btnReset = document.getElementById("btnResetPass");
+
+      const storageKey = "__poc_ai_test_passfail__";
+      let state = {};
+      try { state = JSON.parse(localStorage.getItem(storageKey) || "{}"); } catch {}
+
+      const steps = [
+        { k: "score_benign", t: "INJECTED_SCRIPT_SCORE (BENIGN) 확인" },
+        { k: "ai_benign", t: "INJECTED_SCRIPT_AI_VERDICT (BENIGN) 확인" },
+        { k: "score_mal", t: "INJECTED_SCRIPT_SCORE (MALICIOUS) 확인" },
+        { k: "ai_mal", t: "INJECTED_SCRIPT_AI_VERDICT (MALICIOUS) 확인" },
+      ];
+
+      function save() {
+        try { localStorage.setItem(storageKey, JSON.stringify(state)); } catch {}
+      }
+
+      function render() {
+        if (!box) return;
+        const done = steps.filter(s => state[s.k] === true).length;
+        const total = steps.length;
+        box.innerHTML = `
+          <div style="margin-bottom:10px;"><b>Progress:</b> ${done}/${total}</div>
+          ${steps.map(s => `
+            <label style="display:flex;gap:10px;align-items:flex-start;margin:8px 0;">
+              <input type="checkbox" ${state[s.k] ? "checked" : ""} data-k="${s.k}" />
+              <span>${s.t}</span>
+            </label>
+          `).join("")}
+        `;
+        box.querySelectorAll("input[type=checkbox][data-k]").forEach((cb) => {
+          cb.addEventListener("change", () => {
+            const k = cb.getAttribute("data-k");
+            state[k] = cb.checked;
+            save();
+            renderStatus();
+          });
+        });
+        renderStatus();
+      }
+
+      function renderStatus() {
+        if (!st) return;
+        const done = steps.filter(s => state[s.k] === true).length;
+        if (!mainUrl) {
+          st.textContent = "missing: POC_AI_TEST_MAIN (hub env)";
+          return;
+        }
+        if (done === steps.length) st.textContent = "PASS ✅ (manual checklist complete)";
+        else st.textContent = `RUNNING… (manual ${done}/${steps.length})`;
+      }
+
+      if (frame) {
+        if (mainUrl) frame.src = mainUrl;
+        frame.addEventListener("load", () => renderStatus());
+        frame.addEventListener("error", () => {
+          if (st) st.textContent = "iframe load error";
+        });
+      }
+
+      if (btnReload) btnReload.addEventListener("click", () => {
+        if (!frame) return;
+        if (!mainUrl) { renderStatus(); return; }
+        const u = new URL(mainUrl, location.href);
+        u.searchParams.set("_t", String(Date.now()));
+        frame.src = u.toString();
+      });
+
+      if (btnAll) btnAll.addEventListener("click", () => {
+        steps.forEach(s => state[s.k] = true);
+        save();
+        render();
+      });
+
+      if (btnReset) btnReset.addEventListener("click", () => {
+        state = {};
+        save();
+        render();
+      });
+
+      render();
+    })();
+  </script>
+</body>
+</html>

@@ -43,6 +43,8 @@
   function getPocId() {
     const fromAttr = document.body.getAttribute("data-poc-id");
     if (fromAttr) return fromAttr;
+    const any = document.querySelector("[data-poc-id]");
+    if (any) return any.getAttribute("data-poc-id") || "";
     const qs = new URLSearchParams(location.search);
     return qs.get("id") || "";
   }
@@ -904,6 +906,41 @@
           why: "정적 분석/탐지 회피를 위해 디코드(atob) + 동적 실행(Function)을 사용하는 흔한 패턴입니다."
         }
       ]
+    },
+    "poc-AI-test": {
+      expectedEventTypes: [
+        "INJECTED_SCRIPT_SCORE",
+        "INJECTED_SCRIPT_AI_VERDICT"
+      ],
+      expectedRuleIds: [
+        "INJECTED_SCRIPT_SCORE",
+        "INJECTED_SCRIPT_AI_VERDICT"
+      ],
+      reproChecklist: [
+        {
+          title: "1) PoC-AI-Test 메인 페이지 열기",
+          detail: "",
+          action: "open_main"
+        },
+        {
+          title: "2) Inject: BENIGN(medium) 클릭", 
+          detail: "대시보드에서 INJECTED_SCRIPT_SCORE 확인", 
+          action: "manual" 
+        },
+        { title: "3) AI verdict 확인", 
+          detail: "몇 초 내 INJECTED_SCRIPT_AI_VERDICT(benign) 추가 기록 확인", 
+          action: "manual" 
+        },
+        { 
+          title: "4) Inject: MALICIOUS(medium) 클릭", 
+          detail: "대시보드에서 INJECTED_SCRIPT_SCORE 확인", 
+          action: "manual" 
+        },
+        { title: "5) AI verdict 확인", 
+          detail: "몇 초 내 INJECTED_SCRIPT_AI_VERDICT(malicious) 추가 기록 확인", 
+          action: "manual" 
+        }
+      ]
     }
   };
 
@@ -918,9 +955,9 @@
 
   const detailTitle = document.getElementById("detailTitle");
   const detailSub = document.getElementById("detailSub");
-  const pocTitle = document.getElementById("pocTitle");
-  const pocDesc = document.getElementById("pocDesc");
-  const pocLinkButtons = document.getElementById("pocLinkButtons");
+  const pocTitle = document.getElementById("pocTitle") || document.getElementById("title");
+  const pocDesc = document.getElementById("pocDesc") || document.getElementById("desc");
+  const pocLinkButtons = document.getElementById("pocLinkButtons") || document.getElementById("links");
   const pocNotes = document.getElementById("pocNotes");
 
   const btnBack = document.getElementById("btnBack");
@@ -1010,7 +1047,7 @@
   }
 
   function renderReproChecklist() {
-    const root = document.getElementById("reproChecklist");
+    const root = document.getElementById("reproChecklist") || document.getElementById("checklist");
     const progress = document.getElementById("reproProgress");
     if (!root || !writeup || !Array.isArray(writeup.reproChecklist)) return;
 
@@ -1101,6 +1138,8 @@
 
     const evBox = document.getElementById("eventTypesBox");
     const ruleBox = document.getElementById("ruleIdsBox");
+    const evUl = document.getElementById("expectedEventTypes");
+    const ruleUl = document.getElementById("expectedRuleIds");
     const btnEv = document.getElementById("btnCopyEventTypes");
     const btnRule = document.getElementById("btnCopyRuleIds");
 
@@ -1109,6 +1148,9 @@
 
     if (evBox) evBox.textContent = ev.map(s => `- ${s}`).join("\n");
     if (ruleBox) ruleBox.textContent = rules.map(s => `- ${s}`).join("\n");
+
+    if (evUl) evUl.innerHTML = ev.map(s => `<li><code>${esc(s)}</code></li>`).join("");
+    if (ruleUl) ruleUl.innerHTML = rules.map(s => `<li><code>${esc(s)}</code></li>`).join("");
 
     if (btnEv) btnEv.addEventListener("click", async () => {
       if (!ev.length) return;
