@@ -1185,7 +1185,114 @@
     root.innerHTML = html;
   }
 
+  function initAiTestEmbedAndPassFail() {
+    if (pocId !== "poc-ai-test") return;
+
+    const frame = document.getElementById("aiTestFrame");
+    const st = document.getElementById("aiTestStatus");
+    const boxRoot = document.getElementById("aiTestPassFail");
+    const btnReload = document.getElementById("aiTestReload");
+    const btnAll = document.getElementById("aiTestMarkAll");
+    const btnReset = document.getElementById("aiTestReset");
+
+    const mainUrlRaw = links.main || links.victim || "";
+    const mainUrl = isSetUrl(mainUrlRaw) ? toOpenableUrl(mainUrlRaw) : "";
+
+    const storageKey = "__poc_ai_test_passfail__";
+    let state = {};
+    try { state = JSON.parse(localStorage.getItem(storageKey) || "{}"); } catch {}
+
+    const steps = [
+      { k: "score_benign", t: "INJECTED_SCRIPT_SCORE (BENIGN) 확인" },
+      { k: "ai_benign", t: "INJECTED_SCRIPT_AI_VERDICT (BENIGN) 확인" },
+      { k: "score_mal", t: "INJECTED_SCRIPT_SCORE (MALICIOUS) 확인" },
+      { k: "ai_mal", t: "INJECTED_SCRIPT_AI_VERDICT (MALICIOUS) 확인" }
+    ];
+
+    function save() {
+      try { localStorage.setItem(storageKey, JSON.stringify(state)); } catch {}
+    }
+
+    function doneCount() {
+      return steps.filter(s => state[s.k] === true).length;
+    }
+
+    function renderStatus() {
+      if (!st) return;
+      if (!mainUrl) { st.textContent = "missing: MAIN link (hub env)"; return; }
+      const done = doneCount();
+      const total = steps.length;
+      st.textContent = (done === total) ? "PASS (manual checklist complete)" : `RUNNING… (manual ${done}/${total})`;
+    }
+
+    function renderBox() {
+      if (!boxRoot) return;
+
+      const wrap = document.createElement("div");
+      wrap.className = "checklist";
+
+      const head = document.createElement("div");
+      head.className = "hint";
+      head.textContent = `Progress: ${doneCount()}/${steps.length}`;
+      wrap.appendChild(head);
+
+      steps.forEach((s) => {
+        const row = document.createElement("div");
+        row.className = "check-row";
+
+        const cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.checked = state[s.k] === true;
+        cb.addEventListener("change", () => {
+          state[s.k] = cb.checked;
+          save();
+          renderBox();
+        });
+
+        const txt = document.createElement("div");
+        txt.className = "txt";
+        txt.innerHTML = `<b>${esc(s.t)}</b>`;
+
+        row.appendChild(cb);
+        row.appendChild(txt);
+        wrap.appendChild(row);
+      });
+
+      boxRoot.innerHTML = "";
+      boxRoot.appendChild(wrap);
+      renderStatus();
+    }
+
+    if (frame) {
+      if (mainUrl) frame.src = mainUrl;
+      frame.addEventListener("load", () => renderStatus());
+    }
+
+    if (btnReload) btnReload.addEventListener("click", () => {
+      if (!frame) return;
+      if (!mainUrl) { renderStatus(); return; }
+      const u = new URL(mainUrl, location.href);
+      u.searchParams.set("_t", String(Date.now()));
+      frame.src = u.toString();
+    });
+
+    if (btnAll) btnAll.addEventListener("click", () => {
+      steps.forEach(s => state[s.k] = true);
+      save();
+      renderBox();
+    });
+
+    if (btnReset) btnReset.addEventListener("click", () => {
+      state = {};
+      save();
+      renderBox();
+    });
+
+    renderBox();
+  }
+
   renderReproChecklist();
   renderExpectedLists();
   renderEvidence();
+  initAiTestEmbedAndPassFail();
 })();

@@ -3,191 +3,158 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>PoC-AI-Test</title>
+  <title>PoC-AI-Test - Detail</title>
   <link rel="stylesheet" href="/style.css" />
 </head>
-<body data-poc-id="poc-AI-test">
-  <main class="poc-detail">
-    <a class="back" href="/">← Back</a>
+<body data-poc-id="poc-ai-test" data-poc-template="detail-v2">
+  <header class="top">
+    <div class="top__inner">
+      <div class="brand">
+        <div class="brand__title" id="detailTitle">BRS PoC Hub</div>
+        <div class="brand__sub" id="detailSub">loading...</div>
+      </div>
 
-    <header class="hdr">
-      <h1 class="title" id="title">PoC-AI-Test</h1>
-      <p class="desc" id="desc"></p>
-      <div class="links" id="links"></div>
-    </header>
+      <div class="actions">
+        <button class="btn btn--ghost" id="btnBack">← Hub</button>
+        <button class="btn" id="btnCopyLinks">Copy links</button>
+      </div>
+    </div>
+  </header>
 
-    <section class="grid">
-      <article class="card">
-        <h2>개요</h2>
-        <p>
-          AI 판별 파이프라인이 살아있는지를 <b>E2E</b>로 확인하는 회귀 테스트 PoC입니다.
-          버튼 클릭으로 인라인 스크립트를 주입하면 확장프로그램이 덤프/스코어링하고,
-          score가 중간(50~79)이면 /dumps에서 OpenAI 판정 후 AI verdict 이벤트를 추가로 기록합니다.
-        </p>
-      </article>
-
-      <article class="card">
-        <h2>체크리스트</h2>
-        <div id="checklist"></div>
-      </article>
-
-      <article class="card">
-        <h2>Expected</h2>
-        <div class="two">
-          <div>
-            <h3>Event Types</h3>
-            <ul id="expectedEventTypes"></ul>
-          </div>
-          <div>
-            <h3>Rule IDs</h3>
-            <ul id="expectedRuleIds"></ul>
-          </div>
-        </div>
-      </article>
-
-      <article class="card" style="grid-column: 1 / -1;">
-        <h2>Live Test (Embedded MAIN)</h2>
-        <p style="margin-top:8px;color:#666;font-size:13px;line-height:1.5;">
-          아래 iframe은 <code>POC_AI_TEST_MAIN</code>(MAIN)을 내장합니다.
-          MAIN에서 BENIGN/MALICIOUS 버튼을 눌러 트리거하고, 우측 체크를 수동으로 완료하세요.
-        </p>
-
-        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:12px;align-items:center;">
-          <span id="liveStatus" class="hint">waiting: POC_AI_TEST_MAIN</span>
-          <button id="btnReloadFrame" class="btn btn--ghost" type="button">Reload iframe</button>
-          <button id="btnMarkAllPass" class="btn" type="button">Mark all PASS</button>
-          <button id="btnResetPass" class="btn btn--ghost" type="button">Reset</button>
-        </div>
-
-        <div style="display:grid;grid-template-columns:1fr 360px;gap:12px;margin-top:12px;align-items:start;">
-          <div style="min-height:520px;border:1px solid #eee;border-radius:12px;overflow:hidden;background:#fff;">
-            <iframe
-              id="mainFrame"
-              title="PoC-AI-Test MAIN"
-              referrerpolicy="no-referrer"
-              sandbox="allow-scripts allow-forms allow-same-origin allow-popups"
-              style="width:100%;height:520px;border:0;"
-            ></iframe>
-          </div>
-
-          <div>
-            <div class="hint" style="margin-bottom:10px;">
-              PASS/FAIL는 대시보드(Threat_Events) 확인 후 수동 체크용입니다.
-            </div>
-            <div id="passFail" class="checklist"></div>
-          </div>
-        </div>
-      </article>
+  <main class="container">
+    <section class="panel">
+      <h2 id="pocTitle">PoC-AI-Test</h2>
+      <div class="hint" id="pocDesc"></div>
+      <div class="links" id="pocLinkButtons"></div>
+      <div class="note" id="pocNotes"></div>
     </section>
+
+    <section class="panel">
+      <h2>PoC-AI-Test 개요</h2>
+      <div class="hint">
+        AI 판별 파이프라인이 살아있는지를 E2E로 확인하는 회귀 테스트 PoC입니다.
+        MAIN에서 인라인 스크립트를 주입하면 확장프로그램이 덤프/스코어링하고,
+        score가 중간(50~79)이면 /dumps에서 OpenAI 판정 후 AI verdict 이벤트를 추가로 기록합니다.
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>테스트 진행(체크리스트)</h2>
+      <div class="hint">아래 단계는 순서대로 진행하는 테스트 가이드입니다.</div>
+      <div id="reproChecklist"></div>
+      <div class="hint" id="reproProgress"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Live Test (Embedded MAIN)</h2>
+      <div class="hint">
+        아래 iframe은 MAIN 링크를 허브 디테일 안에 내장합니다. MAIN에서 BENIGN/MALICIOUS 트리거 후,
+        대시보드(Threat_Events) 확인 결과를 우측 PASS/FAIL로 수동 체크하세요.
+      </div>
+
+      <div class="links" style="margin-top:10px;">
+        <span class="hint" id="aiTestStatus">waiting: MAIN link</span>
+        <button id="aiTestReload" class="btn btn--ghost" type="button">Reload iframe</button>
+        <button id="aiTestMarkAll" class="btn" type="button">Mark all PASS</button>
+        <button id="aiTestReset" class="btn btn--ghost" type="button">Reset</button>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 360px;gap:12px;margin-top:12px;align-items:start;">
+        <div style="min-height:520px;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:rgba(22,28,34,.6);">
+          <iframe
+            id="aiTestFrame"
+            title="PoC-AI-Test MAIN"
+            referrerpolicy="no-referrer"
+            sandbox="allow-scripts allow-forms allow-same-origin allow-popups"
+            style="width:100%;height:520px;border:0;background:transparent;"
+          ></iframe>
+        </div>
+        <div>
+          <div class="hint" style="margin-bottom:10px;">PASS/FAIL는 수동 체크입니다.</div>
+          <div id="aiTestPassFail"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>기대 이벤트 타입</h2>
+      <div class="hint">콘솔/대시보드에서 <code>type</code> 필드로 검색할 때 사용할 목록입니다.</div>
+      <div class="links">
+        <button class="btn btn--ghost" id="btnCopyEventTypes">Copy event types</button>
+      </div>
+      <pre class="poc-pre" id="eventTypesBox"></pre>
+    </section>
+
+    <section class="panel">
+      <h2>기대 Rule ID</h2>
+      <div class="hint">룰셋에서 어떤 규칙이 매칭되는지 확인할 때 사용할 목록입니다.</div>
+      <div class="links">
+        <button class="btn btn--ghost" id="btnCopyRuleIds">Copy rule ids</button>
+      </div>
+      <pre class="poc-pre" id="ruleIdsBox"></pre>
+    </section>
+
+    <section class="panel">
+      <h2>확인해야 할 Evidence/필드</h2>
+      <div class="hint">왜 탐지됐는지 근거 필드를 확인할 수 있도록 정리한 항목입니다.</div>
+      <div id="evidenceBox"></div>
+    </section>
+
+    <footer class="footer">
+      <span>Detail page: PoC-AI-Test template</span>
+    </footer>
   </main>
 
   <script src="/runtime-config.js"></script>
   <script src="/poc.js"></script>
-  <script>
-    (function () {
-      const cfg = window.__HUB_CONFIG__ || {};
-      const pocId = "poc-ai-test";
 
-      function findItemById(id) {
-        const groups = Array.isArray(cfg.groups) ? cfg.groups : [];
-        for (const g of groups) {
-          const items = Array.isArray(g.items) ? g.items : [];
-          for (const it of items) if (it && it.id === id) return it;
-        }
-        return null;
-      }
-
-      const item = findItemById(pocId);
-      const links = (item && item.links) ? item.links : {};
-      const mainUrl = typeof links.main === "string" ? links.main : "";
-
-      const frame = document.getElementById("mainFrame");
-      const st = document.getElementById("liveStatus");
-      const box = document.getElementById("passFail");
-      const btnReload = document.getElementById("btnReloadFrame");
-      const btnAll = document.getElementById("btnMarkAllPass");
-      const btnReset = document.getElementById("btnResetPass");
-
-      const storageKey = "__poc_ai_test_passfail__";
-      let state = {};
-      try { state = JSON.parse(localStorage.getItem(storageKey) || "{}"); } catch {}
-
-      const steps = [
-        { k: "score_benign", t: "INJECTED_SCRIPT_SCORE (BENIGN) 확인" },
-        { k: "ai_benign", t: "INJECTED_SCRIPT_AI_VERDICT (BENIGN) 확인" },
-        { k: "score_mal", t: "INJECTED_SCRIPT_SCORE (MALICIOUS) 확인" },
-        { k: "ai_mal", t: "INJECTED_SCRIPT_AI_VERDICT (MALICIOUS) 확인" },
-      ];
-
-      function save() {
-        try { localStorage.setItem(storageKey, JSON.stringify(state)); } catch {}
-      }
-
-      function render() {
-        if (!box) return;
-        const done = steps.filter(s => state[s.k] === true).length;
-        const total = steps.length;
-        box.innerHTML = `
-          <div style="margin-bottom:10px;"><b>Progress:</b> ${done}/${total}</div>
-          ${steps.map(s => `
-            <label style="display:flex;gap:10px;align-items:flex-start;margin:8px 0;">
-              <input type="checkbox" ${state[s.k] ? "checked" : ""} data-k="${s.k}" />
-              <span>${s.t}</span>
-            </label>
-          `).join("")}
-        `;
-        box.querySelectorAll("input[type=checkbox][data-k]").forEach((cb) => {
-          cb.addEventListener("change", () => {
-            const k = cb.getAttribute("data-k");
-            state[k] = cb.checked;
-            save();
-            renderStatus();
-          });
-        });
-        renderStatus();
-      }
-
-      function renderStatus() {
-        if (!st) return;
-        const done = steps.filter(s => state[s.k] === true).length;
-        if (!mainUrl) {
-          st.textContent = "missing: POC_AI_TEST_MAIN (hub env)";
-          return;
-        }
-        if (done === steps.length) st.textContent = "PASS ✅ (manual checklist complete)";
-        else st.textContent = `RUNNING… (manual ${done}/${steps.length})`;
-      }
-
-      if (frame) {
-        if (mainUrl) frame.src = mainUrl;
-        frame.addEventListener("load", () => renderStatus());
-        frame.addEventListener("error", () => {
-          if (st) st.textContent = "iframe load error";
-        });
-      }
-
-      if (btnReload) btnReload.addEventListener("click", () => {
-        if (!frame) return;
-        if (!mainUrl) { renderStatus(); return; }
-        const u = new URL(mainUrl, location.href);
-        u.searchParams.set("_t", String(Date.now()));
-        frame.src = u.toString();
-      });
-
-      if (btnAll) btnAll.addEventListener("click", () => {
-        steps.forEach(s => state[s.k] = true);
-        save();
-        render();
-      });
-
-      if (btnReset) btnReset.addEventListener("click", () => {
-        state = {};
-        save();
-        render();
-      });
-
-      render();
-    })();
-  </script>
+  <style>
+    .poc-pre {
+      margin: 10px 0 0;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(22,28,34,.6);
+      color: var(--text);
+      font-size: 12px;
+      overflow: auto;
+      white-space: pre-wrap;
+      line-height: 1.45;
+    }
+    .kv {
+      margin-top: 10px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(22,28,34,.6);
+    }
+    .kv .k { color: var(--muted); font-size: 12px; }
+    .kv .v { color: var(--text); font-size: 12px; margin-top: 6px; }
+    .checklist {
+      margin-top: 10px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(22,28,34,.6);
+    }
+    .check-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(38,48,58,.6);
+    }
+    .check-row:last-child { border-bottom: none; }
+    .check-row input { margin-top: 2px; }
+    .check-row .txt { font-size: 12px; color: var(--text); line-height: 1.45; }
+    .check-row .sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .inline-actions {
+      margin-top: 8px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+  </style>
 </body>
 </html>

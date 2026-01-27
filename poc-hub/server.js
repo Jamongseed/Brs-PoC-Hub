@@ -19,7 +19,7 @@ function getDefaultConfig() {
           {
             id: "poc-AI-test",
             title: "PoC-AI-Test: Script Verdict Regression",
-            desc: "인라인 스크립트 2종 주입 → score(mid) → /dumps(OpenAI) → AI verdict 이벤트",
+            desc: "스크립트 주입 → score(mid) → /dumps(OpenAI) → AI verdict",
             links: { main: "" },
             tags: ["ai", "script-dump", "regression"]
           },
