@@ -951,11 +951,11 @@
           title: "INJECTED_SCRIPT_SCORE (dump/scoring)",
           keys: [
             "type = INJECTED_SCRIPT_SCORE",
-            "data.score (50~79이면 AI 파이프라인 대상)",
+            "data.score (50~79이면 AI 판정 트리거 대상)",
             "data.ruleId / data.severity (스코어링 결과)",
             "data.sha256 또는 data.dumpId (dump 추적 키)"
           ],
-          why: "스크립트 주입이 덤프/스코어링 파이프라인을 타서 '중간 점수'로 분류됐는지 확인합니다. (이 이벤트가 있어야 후속 AI 판정이 의미가 있습니다.)"
+          why: "스크립트 주입이 덤프/스코어링 파이프라인을 타서 중간 점수로 분류됐는지 확인합니다. (이 이벤트가 있어야 후속 AI 판정이 의미가 있습니다.)"
         },
         {
           title: "INJECTED_SCRIPT_AI_VERDICT (/dumps → OpenAI)",
