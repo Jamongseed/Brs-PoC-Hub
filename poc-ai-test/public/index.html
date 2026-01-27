@@ -3,80 +3,37 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>PoC Detail</title>
+  <title>PoC-AI-Test: Script Verdict Regression</title>
   <link rel="stylesheet" href="/style.css" />
 </head>
-<body data-poc-id="poc-ai-test">
-  <header class="top">
-    <div class="container">
-      <div class="top__row">
-        <div>
-          <div class="top__title" id="detailTitle">BRS PoC Hub</div>
-          <div class="top__sub" id="detailSub">poc: poc-ai-test</div>
-        </div>
-        <div class="top__actions">
-          <button class="btn btn--ghost" id="btnBack">Back</button>
-          <button class="btn" id="btnCopyLinks">Copy links</button>
-        </div>
-      </div>
+<body>
+  <main class="card">
+    <h1>PoC-AI-Test: AI 판별 E2E 회귀 테스트</h1>
+    <p class="desc">
+      아래 버튼은 <b>인라인 스크립트</b>를 DOM에 주입합니다.<br/>
+      확장프로그램이 이를 덤프/스코어링하고, score가 <b>50~79(중간)</b>이면 <b>/dumps</b>에서 OpenAI 판정 후
+      <code>INJECTED_SCRIPT_AI_VERDICT</code> 이벤트를 추가로 기록합니다.
+    </p>
+
+    <div class="row">
+      <button id="btn-benign">Inject: BENIGN (medium)</button>
+      <button id="btn-mal">Inject: MALICIOUS (medium)</button>
     </div>
-  </header>
 
-  <main class="container">
-    <section class="card">
-      <h1 id="pocTitle">PoC-AI-Test</h1>
-      <p class="desc" id="pocDesc"></p>
+    <div class="status" id="status">Ready.</div>
 
-      <div class="actions" id="pocLinkButtons"></div>
-
-      <div class="hint" style="margin-top:12px;">
-        아래 iframe에서 바로 실행하면 “AI verdict 결과”까지 화면에서 확인할 수 있습니다.
-        (X-Frame 차단이 걸린 배포라면 Open MAIN 버튼으로 열어주세요.)
-      </div>
-
-      <div style="margin-top:12px;">
-        <iframe
-          id="embedMain"
-          title="PoC-AI-Test MAIN"
-          style="width:100%; height:720px; border:1px solid rgba(0,0,0,0.12); border-radius:12px;"
-          referrerpolicy="no-referrer"
-        ></iframe>
-      </div>
-    </section>
-
-    <section class="grid">
-      <section class="card">
-        <div class="card__head">
-          <h2>Expected event.type</h2>
-          <button class="btn btn--ghost" id="btnCopyEventTypes">Copy</button>
-        </div>
-        <pre class="code" id="eventTypesBox"></pre>
-      </section>
-
-      <section class="card">
-        <div class="card__head">
-          <h2>Expected ruleId</h2>
-          <button class="btn btn--ghost" id="btnCopyRuleIds">Copy</button>
-        </div>
-        <pre class="code" id="ruleIdsBox"></pre>
-      </section>
-    </section>
-
-    <section class="card">
-      <div class="card__head">
-        <h2>Repro checklist</h2>
-        <div class="muted" id="reproProgress"></div>
-      </div>
-      <div id="reproChecklist"></div>
-    </section>
-
-    <section class="card">
-      <h2>Evidence fields</h2>
-      <div id="evidenceBox"></div>
-    </section>
+    <details class="hint">
+      <summary>기대 이벤트(대시보드)</summary>
+      <ul>
+        <li><code>INJECTED_SCRIPT_SCORE</code> (ruleId 동일)</li>
+        <li><code>INJECTED_SCRIPT_AI_VERDICT</code> (ruleId 동일, /dumps에서 emit)</li>
+      </ul>
+      <p class="small">
+        ※ 이 PoC는 확장프로그램이 인라인 덤프를 수집하도록 “src 없는 &lt;script&gt;”를 넣습니다.
+      </p>
+    </details>
   </main>
 
-  <script src="/runtime-config.js"></script>
-  <script src="/poc.js"></script>
+  <script src="/app.js"></script>
 </body>
 </html>
