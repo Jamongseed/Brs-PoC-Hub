@@ -1,6 +1,10 @@
 (function () {
   const cfg = window.__HUB_CONFIG__ || {};
 
+  function normId(s) {
+    return String(s || "").trim().toLowerCase();
+  }
+
   function esc(s) {
     return String(s).replace(/[&<>"']/g, (m) => ({
       "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
@@ -30,11 +34,12 @@
   }
 
   function findItemById(id) {
+    const want = normId(id);
     const groups = Array.isArray(cfg.groups) ? cfg.groups : [];
     for (const g of groups) {
       const items = Array.isArray(g.items) ? g.items : [];
       for (const it of items) {
-        if (it.id === id) return it;
+        if (it && normId(it.id) === want) return it;
       }
     }
     return null;
@@ -945,13 +950,15 @@
   };
 
   function getWriteup(pocId) {
-    return WRITEUPS[pocId] || null;
+    return WRITEUPS[normId(pocId)] || null;
   }
 
   // ---- init common header/buttons ----
   const pocId = getPocId();
   const item = findItemById(pocId);
-  const writeup = getWriteup(pocId);
+  const canonicalPocId = (item && item.id) ? item.id : pocId;
+  const writeup = getWriteup(canonicalPocId);
+  const pocIdNorm = normId(canonicalPocId);
 
   const detailTitle = document.getElementById("detailTitle");
   const detailSub = document.getElementById("detailSub");
@@ -978,7 +985,7 @@
   document.title = (item.title || pocId) + " - Detail";
 
   if (detailTitle) detailTitle.textContent = cfg.hubTitle || "BRS PoC Hub";
-  if (detailSub) detailSub.textContent = `poc: ${pocId}`;
+  if (detailSub) detailSub.textContent = `poc: ${canonicalPocId}`;
 
   if (pocTitle) pocTitle.textContent = item.title || pocId;
   if (pocDesc) pocDesc.textContent = item.desc || "";
@@ -1027,7 +1034,7 @@
     }
 
     pocLinkButtons.appendChild(mkGhost("Copy links (this page)", async () => {
-      const lines = linkLines(pocId, links);
+      const lines = linkLines(canonicalPocId, links);
       if (!lines.length) return;
       try { await copyText(lines.join("\n")); } catch {}
     }));
@@ -1051,7 +1058,7 @@
     const progress = document.getElementById("reproProgress");
     if (!root || !writeup || !Array.isArray(writeup.reproChecklist)) return;
 
-    const storageKey = `__poc_check_${pocId}__`;
+    const storageKey = `__poc_check_${pocIdNorm}__`;
     let state = {};
     try { state = JSON.parse(localStorage.getItem(storageKey) || "{}"); } catch {}
 
@@ -1186,7 +1193,7 @@
   }
 
   function initAiTestEmbedAndPassFail() {
-    if (pocId !== "poc-ai-test") return;
+    if (pocIdNorm !== "poc-ai-test") return;
 
     const frame = document.getElementById("aiTestFrame");
     const st = document.getElementById("aiTestStatus");
