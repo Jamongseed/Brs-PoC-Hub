@@ -912,7 +912,7 @@
         }
       ]
     },
-    "poc-AI-test": {
+    "poc-ai-test": {
       expectedEventTypes: [
         "INJECTED_SCRIPT_SCORE",
         "INJECTED_SCRIPT_AI_VERDICT"
@@ -945,12 +945,34 @@
           detail: "몇 초 내 INJECTED_SCRIPT_AI_VERDICT(malicious) 추가 기록 확인", 
           action: "manual" 
         }
+      ],
+      evidenceFields: [
+        {
+          title: "INJECTED_SCRIPT_SCORE (dump/scoring)",
+          keys: [
+            "type = INJECTED_SCRIPT_SCORE",
+            "data.score (50~79이면 AI 파이프라인 대상)",
+            "data.ruleId / data.severity (스코어링 결과)",
+            "data.sha256 또는 data.dumpId (dump 추적 키)"
+          ],
+          why: "스크립트 주입이 덤프/스코어링 파이프라인을 타서 '중간 점수'로 분류됐는지 확인합니다. (이 이벤트가 있어야 후속 AI 판정이 의미가 있습니다.)"
+        },
+        {
+          title: "INJECTED_SCRIPT_AI_VERDICT (/dumps → OpenAI)",
+          keys: [
+            "type = INJECTED_SCRIPT_AI_VERDICT",
+            "data.verdict = benign | malicious",
+            "data.model / data.provider (있으면 기록)",
+            "data.sourceSha256 또는 data.dumpId (SCORE 이벤트와 연결 키)"
+          ],
+          why: "score(mid) 조건에서 /dumps 쪽 OpenAI 판정이 실제로 수행됐고, 그 결과가 verdict 이벤트로 추가 기록됐는지 확인합니다. SCORE 이벤트의 sha256/dumpId와 매칭되면 E2E 회귀 테스트가 완성됩니다."
+        }
       ]
     }
   };
 
   function getWriteup(pocId) {
-    return WRITEUPS[normId(pocId)] || null;
+    return WRITEUPS[pocId] || WRITEUPS[normId(pocId)] || null;
   }
 
   // ---- init common header/buttons ----
