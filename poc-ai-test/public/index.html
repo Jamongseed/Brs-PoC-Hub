@@ -3,33 +3,35 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>PoC-AI-Test: Script Verdict Regression</title>
+  <title>PoC-AI-Test: 스크립트 판정 회귀 테스트</title>
   <link rel="stylesheet" href="/style.css" />
 </head>
 <body>
   <main class="card">
     <h1>PoC-AI-Test: AI 판별 E2E 회귀 테스트</h1>
     <p class="desc">
-      아래 버튼은 <b>인라인 스크립트</b>를 DOM에 주입합니다.<br/>
-      확장프로그램이 이를 덤프/스코어링하고, score가 <b>50~79(중간)</b>이면 <b>/dumps</b>에서 OpenAI 판정 후
-      <code>INJECTED_SCRIPT_AI_VERDICT</code> 이벤트를 추가로 기록합니다.
+      아래 버튼을 누르면 <b>인라인 스크립트</b>를 DOM에 주입합니다.<br/>
+      확장프로그램이 이를 덤프/초기 스코어링하고, 이후 <b>/dumps</b>에서 webcrack 재스코어링으로 점수가 <b>MEDIUM(50~79)</b>에 들어오면
+      AI 판정을 수행해 <code>INJECTED_SCRIPT_AI_VERDICT</code> 이벤트를 추가로 기록합니다.
     </p>
 
     <div class="row">
-      <button id="btn-benign">Inject: BENIGN (medium)</button>
-      <button id="btn-mal">Inject: MALICIOUS (medium)</button>
+      <button id="btn-benign">스크립트 주입: BENIGN (중간점수용)</button>
+      <button id="btn-mal">스크립트 주입: MALICIOUS (중간점수용)</button>
+      <button id="btn-webcrack-obf">스크립트 주입: 원문 OBF (LOW → webcrack 재스코어 → MEDIUM → AI)</button>
     </div>
 
-    <div class="status" id="status">Ready.</div>
+    <div class="status" id="status">주입 공격 대기 중.</div>
 
     <details class="hint">
       <summary>기대 이벤트(대시보드)</summary>
       <ul>
         <li><code>INJECTED_SCRIPT_SCORE</code> (ruleId 동일)</li>
+        <li><code>INJECTED_SCRIPT_RESCORE</code> (webcrack 재스코어링)</li>
         <li><code>INJECTED_SCRIPT_AI_VERDICT</code> (ruleId 동일, /dumps에서 emit)</li>
       </ul>
       <p class="small">
-        ※ 이 PoC는 확장프로그램이 인라인 덤프를 수집하도록 “src 없는 &lt;script&gt;”를 넣습니다.
+        ※ 이 PoC는 확장프로그램이 인라인 덤프를 수집하도록 src 없는 &lt;script&gt;를 주입합니다.
       </p>
     </details>
   </main>
